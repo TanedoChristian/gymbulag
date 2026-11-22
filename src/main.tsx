@@ -1,0 +1,25 @@
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { ToastProvider } from './context/Toast';
+import { ConfirmProvider } from './context/Confirm';
+import { RestTimerProvider } from './context/RestTimer';
+import './index.css';
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastProvider>
+          <ConfirmProvider>
+            <RestTimerProvider>
+              <App />
+            </RestTimerProvider>
+          </ConfirmProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
+  </StrictMode>,
+);

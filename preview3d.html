@@ -1,0 +1,47 @@
+<!doctype html>
+<html class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <title>3D Preview</title>
+  </head>
+  <body class="bg-[#07070b] p-4 text-zinc-100">
+    <div id="root"></div>
+    <script type="module">
+      import React from 'react';
+      import { createRoot } from 'react-dom/client';
+      import '/src/index.css';
+      import { KineticExerciseDemo } from '/src/components/anatomy/KineticExerciseDemo';
+
+      const demos = [
+        ['ab-wheel', 'Ab Wheel Rollout', 'other', 'plank', ['abs']],
+        ['bench-press', 'Bench Press', 'barbell', 'benchPress', ['pecs', 'frontDelts', 'triceps']],
+        ['squat', 'Back Squat', 'barbell', 'squat', ['quads', 'glutes']],
+        ['lateral-raise', 'Lateral Raise', 'dumbbell', 'lateralRaise', ['sideDelts']],
+        ['pull-up', 'Pull-up', 'bodyweight', 'pullup', ['lats', 'biceps']],
+        ['barbell-row', 'Barbell Row', 'barbell', 'row', ['lats', 'rhomboids']],
+      ];
+
+      createRoot(document.getElementById('root')).render(
+        React.createElement(
+          'div',
+          { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 380px)', gap: '16px' } },
+          demos.map(([id, name, eq, demo, primary]) =>
+            React.createElement(
+              'div',
+              { key: id },
+              React.createElement('div', { style: { fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: '#a1a1aa' } }, name),
+              React.createElement(KineticExerciseDemo, {
+                exerciseId: id,
+                exerciseName: name,
+                equipment: eq,
+                demo,
+                primary,
+                className: 'h-[390px]',
+              }),
+            ),
+          ),
+        ),
+      );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,9 @@
+.env
+.env.*
+!.env.example
+.backup-mysql
+.backup-pre-red
+.claude
+.cursor
+dist
+node_modules

@@ -1,0 +1,47 @@
+import { Minus, Plus, Timer, X } from 'lucide-react';
+import { useRestTimer } from '../context/RestTimer';
+
+function mmss(s: number) {
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+export function RestTimerBar() {
+  const { state, remaining, adjust, stop } = useRestTimer();
+  if (!state) return null;
+  const done = remaining === 0;
+  const pct = Math.min(100, ((state.duration - remaining) / state.duration) * 100);
+
+  return (
+    <div className="fixed inset-x-0 z-40 flex justify-center px-4" style={{ bottom: 'calc(env(safe-area-inset-bottom) + 5.75rem)' }}>
+      <div
+        className={`relative w-full max-w-md overflow-hidden rounded-2xl shadow-xl ring-1 ${
+          done ? 'bg-emerald-600 text-white ring-emerald-700' : 'bg-zinc-900 text-white ring-zinc-800 dark:bg-zinc-800 dark:ring-zinc-700'
+        }`}
+        role="timer"
+        aria-live="off"
+      >
+        <div className="absolute inset-y-0 left-0 bg-indigo-500/30 transition-[width] duration-300" style={{ width: `${pct}%` }} />
+        <div className="relative flex items-center gap-2 px-3 py-2">
+          <Timer size={18} className="ml-1 opacity-80" />
+          <div className="flex-1">
+            <div className="text-[11px] font-medium uppercase tracking-wide opacity-70">{done ? 'Rest over' : 'Rest'}</div>
+            <div className={`text-xl font-bold tabular leading-none ${done ? 'animate-pop' : ''}`}>{done ? 'Go! 💪' : mmss(remaining)}</div>
+          </div>
+          {!done && (
+            <>
+              <button className="flex h-9 items-center gap-0.5 rounded-lg bg-white/10 px-2.5 text-sm font-semibold hover:bg-white/20" onClick={() => adjust(-15)} aria-label="Subtract 15 seconds">
+                <Minus size={14} />15
+              </button>
+              <button className="flex h-9 items-center gap-0.5 rounded-lg bg-white/10 px-2.5 text-sm font-semibold hover:bg-white/20" onClick={() => adjust(15)} aria-label="Add 15 seconds">
+                <Plus size={14} />15
+              </button>
+            </>
+          )}
+          <button className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/20" onClick={stop} aria-label="Stop timer">
+            <X size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

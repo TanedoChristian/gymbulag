@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-[#f4f5f9] text-zinc-900 antialiased dark:bg-[#07070b] dark:text-zinc-100;
+    font-feature-settings: 'cv11', 'ss01';
+    background-image: radial-gradient(900px 480px at 50% -180px, rgba(99, 102, 241, 0.10), transparent 70%);
+    background-attachment: fixed;
+  }
+  .dark body {
+    background-image: radial-gradient(900px 520px at 50% -200px, rgba(99, 102, 241, 0.22), transparent 70%),
+      radial-gradient(600px 400px at 100% 0%, rgba(168, 85, 247, 0.08), transparent 70%);
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#f4f5f9] dark:ring-offset-[#07070b];
+  }
+  input[type='time']::-webkit-calendar-picker-indicator {
+    @apply opacity-60 dark:invert;
+  }
+  ::selection {
+    @apply bg-indigo-500/30;
+  }
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px.
+   Keep every editable field at 16px+ on touch screens so the page stays put. */
+@media (pointer: coarse) {
+  .input,
+  .set-input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-[0_6px_20px_-6px_rgba(79,70,229,0.65),inset_0_1px_0_rgba(255,255,255,0.18)] hover:from-indigo-400 hover:to-indigo-600;
+  }
+  .btn-secondary {
+    @apply btn bg-zinc-900/[0.06] text-zinc-900 hover:bg-zinc-900/10 dark:bg-white/[0.07] dark:text-zinc-100 dark:hover:bg-white/[0.12];
+  }
+  .btn-ghost {
+    @apply btn text-zinc-700 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.06];
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-500;
+  }
+  .icon-btn {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 active:scale-95 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/[0.08] dark:hover:text-zinc-100;
+  }
+  .input {
+    @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/15 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-100 dark:placeholder:text-zinc-500;
+  }
+  .card {
+    @apply rounded-[20px] border border-zinc-200/70 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.08)] dark:border-white/[0.07] dark:bg-zinc-900/60 dark:shadow-none dark:backdrop-blur-xl;
+  }
+  .card-hover {
+    @apply transition duration-150 hover:-translate-y-px hover:border-indigo-300 hover:shadow-[0_10px_30px_-12px_rgba(79,70,229,0.35)] dark:hover:border-indigo-400/40;
+  }
+  .label {
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400;
+  }
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500;
+  }
+  .chip {
+    @apply inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition;
+  }
+  .chip-off {
+    @apply chip border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-300 dark:hover:bg-white/[0.07];
+  }
+  .chip-on {
+    @apply chip border-transparent bg-zinc-900 text-white dark:bg-white dark:text-zinc-900;
+  }
+  .set-input {
+    @apply h-10 w-full rounded-xl border border-transparent bg-zinc-100 text-center text-base font-bold tabular text-zinc-900 transition placeholder:font-medium placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/15 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-600 dark:focus:bg-zinc-900;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+
+@keyframes motion-muscle-pulse {
+  0%,
+  100% {
+    opacity: 0.68;
+    filter: saturate(1) brightness(0.98) drop-shadow(0 0 1px currentColor);
+  }
+  50% {
+    opacity: 1;
+    filter: saturate(1.35) brightness(1.15) drop-shadow(0 0 5px currentColor);
+  }
+}
+
+.motion-muscle-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: motion-muscle-pulse 1.15s ease-in-out infinite;
+}
+
+@keyframes anatomy-focus-pulse {
+  0%,
+  100% {
+    fill-opacity: 0.86;
+  }
+  50% {
+    fill-opacity: 1;
+  }
+}
+
+.demo-stage {
+  --demo-skin-hi: #f3cab0;
+  --demo-skin-lo: #dda27b;
+  --demo-skin-deep-hi: #dca681;
+  --demo-skin-deep-lo: #c48763;
+  --demo-line: rgba(15, 23, 42, 0.28);
+  --demo-floor: rgba(71, 85, 105, 0.28);
+  --demo-shadow: rgba(15, 23, 42, 0.16);
+  --demo-grid: rgba(100, 116, 139, 0.07);
+}
+
+.dark .demo-stage {
+  --demo-skin-hi: #ecb997;
+  --demo-skin-lo: #ce916a;
+  --demo-skin-deep-hi: #c98f69;
+  --demo-skin-deep-lo: #ab7250;
+  --demo-line: rgba(2, 6, 23, 0.55);
+  --demo-floor: rgba(148, 163, 184, 0.22);
+  --demo-shadow: rgba(0, 0, 0, 0.45);
+  --demo-grid: rgba(148, 163, 184, 0.06);
+}
+
+.anatomy-figure {
+  --anat-base-hi: #eef2f7;
+  --anat-base: #dde4ee;
+  --anat-base-lo: #c9d3e2;
+  --anat-muscle-hi: #d9e1ec;
+  --anat-muscle-lo: #c4cfde;
+  --anat-line: rgba(71, 85, 105, 0.45);
+  --anat-outline: rgba(51, 65, 85, 0.68);
+  --anat-fiber: rgba(71, 85, 105, 0.18);
+  --anat-shadow: rgba(15, 23, 42, 0.12);
+}
+
+.dark .anatomy-figure {
+  --anat-base-hi: #2d374a;
+  --anat-base: #222b3b;
+  --anat-base-lo: #1a2130;
+  --anat-muscle-hi: #2a3447;
+  --anat-muscle-lo: #1d2534;
+  --anat-line: rgba(148, 163, 184, 0.36);
+  --anat-outline: rgba(148, 163, 184, 0.55);
+  --anat-fiber: rgba(148, 163, 184, 0.14);
+  --anat-shadow: rgba(0, 0, 0, 0.45);
+}
+
+.anatomy-focus {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-muscle-pulse,
+  .anatomy-focus {
+    animation: none;
+  }
+}
