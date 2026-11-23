@@ -51,12 +51,15 @@ export function startOAuth(provider: Provider, clientId: string) {
   }
 }
 
-let consumed: OAuthReturn | null | undefined;
+let checked = false;
 
-/** The sign-in we just came back from, if any. Read once per page load; strips it from the URL. */
+/**
+ * The sign-in we just came back from, if any. Returned only once per page load, so the login
+ * screen showing again later (after logging out) doesn't reuse it.
+ */
 export function consumeOAuthReturn(): OAuthReturn | null {
-  if (consumed !== undefined) return consumed;
-  consumed = null;
+  if (checked) return null;
+  checked = true;
   const params = new URLSearchParams(location.hash.replace(/^#/, ''));
   const query = new URLSearchParams(location.search);
   const state = params.get('state') ?? query.get('state');
@@ -72,14 +75,13 @@ export function consumeOAuthReturn(): OAuthReturn | null {
   const name = saved.provider === 'google' ? 'Google' : 'Facebook';
   const error = params.get('error') ?? query.get('error');
   const credential = saved.provider === 'google' ? params.get('id_token') : params.get('access_token');
-  consumed = {
+  return {
     provider: saved.provider,
     returnTo: saved.returnTo || '/',
     ...(credential && !error
       ? { credential, nonce: saved.nonce }
       : { error: error === 'access_denied' || query.get('error_reason') === 'user_denied' ? `${name} sign-in was cancelled.` : `${name} sign-in didn't finish. Try again.` }),
   };
-  return consumed;
 }
 
 export type OAuthResponse = AuthResult | { needsProfile: true; email: string; name: string };
