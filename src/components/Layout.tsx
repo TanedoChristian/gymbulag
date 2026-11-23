@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Building2, CalendarDays, Dumbbell, LineChart, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Building2, CalendarDays, Dumbbell, LineChart, Settings, Users } from 'lucide-react';
 import { RestTimerBar } from './RestTimerBar';
 import { UpdatePrompt } from './UpdatePrompt';
 import { useRestTimer } from '../context/RestTimer';
@@ -14,17 +14,14 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: Settings, match: (p: string) => p.startsWith('/settings') },
 ];
 
-/** Shown in the desktop sidebar only; on phones they're reached from the Community tab. */
-const EXTRA_NAV = [
-  { key: 'owner', to: '/gym', label: 'My gym', icon: Building2, match: (p: string) => p.startsWith('/gym') },
-  { key: 'admin', to: '/admin', label: 'Admin', icon: ShieldCheck, match: (p: string) => p.startsWith('/admin') },
-] as const;
+/** Gym owners only. Shown in the desktop sidebar; on phones it's reached from the Community tab. */
+const OWNER_NAV = { to: '/gym', label: 'My gym', icon: Building2, match: (p: string) => p.startsWith('/gym') };
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const timer = useRestTimer();
   const user = useAuth()?.user;
-  const extra = EXTRA_NAV.filter((n) => (n.key === 'admin' ? user?.role === 'admin' : !!user?.isOwner));
+  const extra = user?.isOwner ? [OWNER_NAV] : [];
   return (
     <div className="min-h-dvh lg:flex">
       <aside className="sticky top-0 z-40 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/10 bg-rack px-3 py-5 text-steel-bright lg:flex" aria-label="Main">

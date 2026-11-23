@@ -10,7 +10,7 @@ import { communityMembers, setMemberStatus, type Member } from '../../lib/commun
 type Filter = 'all' | 'active' | 'blocked';
 
 /** Who joined a community, how much they train, and block / unblock. Used by admins and gym owners. */
-export function MembersPanel({ communityId, onChanged }: { communityId: number; onChanged?: () => void }) {
+export function MembersPanel({ communityId, onChanged, asAdmin = false }: { communityId: number; onChanged?: () => void; asAdmin?: boolean }) {
   const toast = useToast();
   const confirm = useConfirm();
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -21,10 +21,10 @@ export function MembersPanel({ communityId, onChanged }: { communityId: number; 
 
   const load = useCallback(() => {
     setError(null);
-    communityMembers(communityId)
+    communityMembers(communityId, asAdmin)
       .then((r) => setMembers(r.members))
       .catch((e) => setError((e as Error).message));
-  }, [communityId]);
+  }, [communityId, asAdmin]);
 
   useEffect(() => {
     setMembers(null);
@@ -55,7 +55,7 @@ export function MembersPanel({ communityId, onChanged }: { communityId: number; 
     }
     setBusy(m.userId);
     try {
-      await setMemberStatus(communityId, m.userId, status);
+      await setMemberStatus(communityId, m.userId, status, asAdmin);
       setMembers((list) => list?.map((x) => (x.userId === m.userId ? { ...x, status, blockedAt: status === 'blocked' ? Date.now() : null } : x)) ?? null);
       toast(status === 'blocked' ? 'Member blocked' : 'Member unblocked', { tone: 'success' });
       onChanged?.();

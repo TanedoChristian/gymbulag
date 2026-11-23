@@ -3,7 +3,7 @@
 //   Gym owners:  see the communities they were given, track their members, block / unblock them.
 //   Everyone:    join a community by scanning its QR code (/join/<code>), see and leave their communities.
 import { randomBytes } from 'node:crypto';
-import { AuthError } from './auth.mjs';
+import { AuthError, isAdminRow } from './auth.mjs';
 import { dialect, isDuplicate } from './db.mjs';
 
 const ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'];
@@ -118,7 +118,7 @@ async function adminUsers(pool, q) {
       id: Number(r.id),
       email: r.email,
       name: r.name,
-      role: r.role,
+      role: isAdminRow(r) ? 'admin' : r.role,
       status: r.status,
       createdAt: Number(r.created_at),
       statusChangedAt: r.status_changed_at == null ? null : Number(r.status_changed_at),

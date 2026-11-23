@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Building2, ChevronRight, Loader2, LogOut, MapPin, QrCode, ShieldCheck, Users } from 'lucide-react';
+import { Building2, ChevronRight, Loader2, LogOut, MapPin, QrCode, Users } from 'lucide-react';
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { NearbyGyms } from '../components/community/NearbyGyms';
 import { useToast } from '../context/Toast';
@@ -11,7 +11,7 @@ import { leaveCommunity, myCommunities, type MyCommunity } from '../lib/communit
 
 type Tab = 'mine' | 'nearby';
 
-/** The gym communities you joined (plus admin / gym-owner shortcuts). */
+/** The gym communities you joined (plus the gym-owner dashboard shortcut). */
 function MyGyms() {
   const toast = useToast();
   const confirm = useConfirm();
@@ -38,7 +38,6 @@ function MyGyms() {
   };
 
   const links = [
-    user?.role === 'admin' && { to: '/admin', icon: <ShieldCheck size={18} />, title: 'Admin panel', desc: 'Users and gym communities' },
     user?.isOwner && { to: '/gym', icon: <Building2 size={18} />, title: 'My gym dashboard', desc: 'Track and manage your members' },
   ].filter((x): x is { to: string; icon: JSX.Element; title: string; desc: string } => !!x);
 

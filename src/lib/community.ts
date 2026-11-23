@@ -1,6 +1,7 @@
 /* Gym communities: joining by QR, the admin panel and gym-owner dashboards. */
 import QRCode from 'qrcode';
 import { api } from './api';
+import { adminApi } from './adminAuth';
 
 export type AccountStatus = 'active' | 'inactive' | 'blocked';
 export type MemberStatus = 'active' | 'blocked';
@@ -82,17 +83,20 @@ export const leaveCommunity = (id: number) => api('/communities/leave', { id });
 /* --------------------------------------------------------------- gym owners */
 
 export const ownedCommunities = () => api<{ communities: Community[] }>('/owner/communities').then((r) => r.communities);
-export const communityMembers = (id: number) => api<{ community: Community; members: Member[] }>(`/communities/${id}/members`);
-export const setMemberStatus = (communityId: number, userId: number, status: MemberStatus) => api(`/communities/${communityId}/members/status`, { userId, status });
+/** `asAdmin`: called from the admin panel, so it uses the admin sign-in instead of the app's. */
+export const communityMembers = (id: number, asAdmin = false) =>
+  (asAdmin ? adminApi : api)<{ community: Community; members: Member[] }>(`/communities/${id}/members`);
+export const setMemberStatus = (communityId: number, userId: number, status: MemberStatus, asAdmin = false) =>
+  (asAdmin ? adminApi : api)(`/communities/${communityId}/members/status`, { userId, status });
 
 /* -------------------------------------------------------------------- admin */
 
-export const adminUsers = (q = '') => api<{ users: AdminUser[]; totals: Record<AccountStatus, number> }>(`/admin/users?q=${encodeURIComponent(q)}`);
-export const setUserStatus = (userId: number, status: AccountStatus) => api('/admin/users/status', { userId, status });
-export const adminCommunities = () => api<{ communities: Community[] }>('/admin/communities').then((r) => r.communities);
-export const createCommunity = (name: string, location: string) => api<{ community: Community }>('/admin/communities', { name, location }).then((r) => r.community);
+export const adminUsers = (q = '') => adminApi<{ users: AdminUser[]; totals: Record<AccountStatus, number> }>(`/admin/users?q=${encodeURIComponent(q)}`);
+export const setUserStatus = (userId: number, status: AccountStatus) => adminApi('/admin/users/status', { userId, status });
+export const adminCommunities = () => adminApi<{ communities: Community[] }>('/admin/communities').then((r) => r.communities);
+export const createCommunity = (name: string, location: string) => adminApi<{ community: Community }>('/admin/communities', { name, location }).then((r) => r.community);
 export const updateCommunity = (id: number, patch: { name?: string; location?: string; active?: boolean; regenerateCode?: boolean }) =>
-  api<{ community: Community }>('/admin/communities/update', { id, ...patch }).then((r) => r.community);
-export const deleteCommunity = (id: number) => api('/admin/communities/delete', { id });
-export const addOwner = (communityId: number, email: string) => api<{ community: Community }>('/admin/communities/owners/add', { communityId, email }).then((r) => r.community);
-export const removeOwner = (communityId: number, userId: number) => api<{ community: Community }>('/admin/communities/owners/remove', { communityId, userId }).then((r) => r.community);
+  adminApi<{ community: Community }>('/admin/communities/update', { id, ...patch }).then((r) => r.community);
+export const deleteCommunity = (id: number) => adminApi('/admin/communities/delete', { id });
+export const addOwner = (communityId: number, email: string) => adminApi<{ community: Community }>('/admin/communities/owners/add', { communityId, email }).then((r) => r.community);
+export const removeOwner = (communityId: number, userId: number) => adminApi<{ community: Community }>('/admin/communities/owners/remove', { communityId, userId }).then((r) => r.community);

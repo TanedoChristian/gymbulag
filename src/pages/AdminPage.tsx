@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { Ban, Building2, CircleOff, Loader2, MapPin, MoreVertical, Plus, QrCode, Search, ShieldCheck, Trash2, UserCog, Users, X } from 'lucide-react';
-import { EmptyState, Modal, PageHeader, StatTile, TabBar, Toggle } from '../components/ui';
+import { ArrowLeft, Ban, Building2, CircleOff, Loader2, LogOut, MapPin, MoreVertical, Plus, QrCode, Search, ShieldCheck, Trash2, UserCog, Users, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { EmptyState, Modal, StatTile, TabBar, Toggle } from '../components/ui';
 import { Menu } from '../components/Menu';
 import { QrModal } from '../components/community/QrModal';
 import { MembersPanel } from '../components/community/MembersPanel';
 import { useToast } from '../context/Toast';
 import { useConfirm } from '../context/Confirm';
-import { useAuth } from '../lib/auth';
+import { adminLogIn, adminLogOut, useAdminSession } from '../lib/adminAuth';
 import {
   addOwner,
   adminCommunities,
@@ -21,7 +22,6 @@ import {
   type AdminUser,
   type Community,
 } from '../lib/community';
-import NotFound from './NotFound';
 
 type Tab = 'users' | 'communities';
 
@@ -48,7 +48,7 @@ function Loading() {
 function UsersTab() {
   const toast = useToast();
   const confirm = useConfirm();
-  const me = useAuth()?.user;
+  const me = useAdminSession()?.user;
   const [q, setQ] = useState('');
   const [data, setData] = useState<{ users: AdminUser[]; totals: Record<AccountStatus, number> } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -394,19 +394,88 @@ function CommunitiesTab() {
         }} />
       <OwnersModal community={ownersId ? byId.get(ownersId) ?? null : null} onClose={() => setOwnersId(null)} onSaved={put} />
       <Modal open={!!membersOf} onClose={() => setMembersId(null)} title={membersOf ? `${membersOf.name} · Members` : ''} size="lg">
-        {membersOf && <MembersPanel communityId={membersOf.id} onChanged={load} />}
+        {membersOf && <MembersPanel asAdmin communityId={membersOf.id} onChanged={load} />}
       </Modal>
     </div>
   );
 }
 
-export default function AdminPage() {
-  const user = useAuth()?.user;
-  const [tab, setTab] = useState<Tab>('users');
-  if (user?.role !== 'admin') return <NotFound />;
+function AdminLogin() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await adminLogIn(email.trim(), password);
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(false);
+    }
+  };
+
   return (
-    <>
-      <PageHeader title="Admin" subtitle="Accounts and gym communities" />
+    <div className="flex min-h-dvh items-center justify-center bg-rack px-4 py-10">
+      <form onSubmit={submit} className="card w-full max-w-sm space-y-4 p-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-md bg-rack text-volt-500">
+            <ShieldCheck size={22} />
+          </span>
+          <div>
+            <div className="eyebrow">Gymbulag</div>
+            <h1 className="font-display text-2xl font-bold leading-tight tracking-wide">Admin sign in</h1>
+          </div>
+        </div>
+        <label className="block">
+          <span className="label">Email</span>
+          <input className="input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
+        </label>
+        <label className="block">
+          <span className="label">Password</span>
+          <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </label>
+        {error && <p className="rounded-lg bg-red-500/10 p-2.5 text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
+        <button className="btn-primary w-full" disabled={busy}>
+          {busy && <Loader2 size={16} className="animate-spin" />} Sign in
+        </button>
+        <p className="text-center text-xs text-steel-mute dark:text-floor-mute">Admin accounts only.</p>
+      </form>
+    </div>
+  );
+}
+
+/** The admin portal: its own sign-in and its own frame, separate from the workout app. */
+export default function AdminPage() {
+  const session = useAdminSession();
+  const confirm = useConfirm();
+  const [tab, setTab] = useState<Tab>('users');
+  if (!session) return <AdminLogin />;
+
+  const signOut = async () => {
+    if (await confirm({ title: 'Sign out of the admin panel?', confirmLabel: 'Sign out' })) await adminLogOut();
+  };
+
+  return (
+    <div className="min-h-dvh pb-16">
+      <header className="sticky top-0 z-30 bg-rack text-steel-bright shadow-rack" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="mx-auto flex h-14 max-w-app items-center gap-3 px-4 lg:max-w-app-wide lg:px-8">
+          <ShieldCheck size={20} className="text-volt-500" />
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-xl font-bold leading-tight tracking-wide">Gymbulag Admin</h1>
+            <div className="truncate text-xs text-floor-mute">{session.user.name || session.user.email}</div>
+          </div>
+          <Link to="/" className="icon-btn text-steel-bright hover:bg-white/10" aria-label="Back to the app" title="Back to the app">
+            <ArrowLeft size={18} />
+          </Link>
+          <button className="icon-btn text-steel-bright hover:bg-white/10" onClick={signOut} aria-label="Sign out" title="Sign out">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </header>
       <div className="mx-auto max-w-app space-y-4 px-4 pt-4 lg:max-w-app-wide lg:px-8">
         <TabBar<Tab>
           ariaLabel="Admin sections"
@@ -419,6 +488,6 @@ export default function AdminPage() {
         />
         {tab === 'users' ? <UsersTab /> : <CommunitiesTab />}
       </div>
-    </>
+    </div>
   );
 }

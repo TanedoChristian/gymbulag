@@ -213,6 +213,7 @@ export function createHandler(pool) {
       }
       if (url.pathname === '/api/auth/register' && req.method === 'POST') return send(res, 201, await register(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/auth/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req)));
+      if (url.pathname === '/api/admin/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req), { adminOnly: true }));
 
       // Everything below needs a logged-in user.
       const auth = await requireUser(pool, req);

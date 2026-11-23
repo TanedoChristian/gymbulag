@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Spinner } from './components/ui';
 import { useSettings } from './hooks/data';
@@ -43,11 +43,20 @@ export default function App() {
   useThemeSync();
   useEffect(() => startAutoSync(), []);
   const auth = useAuth();
+  const { pathname } = useLocation();
   const token = auth && !auth.expired ? auth.token : null;
   // Picks up role / gym-owner access granted since this device last logged in.
   useEffect(() => {
     if (token) fetchMe().catch(() => {});
   }, [token]);
+  // The admin panel has its own sign-in, separate from the workout app's.
+  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+    return (
+      <Suspense fallback={<Spinner />}>
+        <AdminPage />
+      </Suspense>
+    );
+  }
   if (!auth || auth.expired) {
     return (
       <Suspense fallback={<Spinner />}>
@@ -66,7 +75,6 @@ export default function App() {
           <Route path="/community" element={<CommunityPage />} />
           <Route path="/nearby" element={<Navigate to="/community?tab=nearby" replace />} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/admin" element={<AdminPage />} />
           <Route path="/gym" element={<GymPage />} />
           <Route path="/join/:code" element={<JoinPage />} />
           <Route path="*" element={<NotFound />} />

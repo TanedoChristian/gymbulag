@@ -192,7 +192,8 @@ export async function register(pool, body, ctx) {
   return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
 }
 
-export async function login(pool, body, ctx) {
+/** Log in. adminOnly: the admin panel's own sign-in, which only admin accounts get past. */
+export async function login(pool, body, ctx, { adminOnly = false } = {}) {
   const email = normalizeEmail(body.email);
   if (!email || typeof body.password !== 'string' || !body.password) throw new AuthError(400, 'Enter your email and password');
   limit(`login-ip:${ctx.ip}`, 30, 15 * 60_000, 'Too many login attempts.');
@@ -204,8 +205,9 @@ export async function login(pool, body, ctx) {
   if (!row || !ok) throw new AuthError(401, 'Wrong email or password');
   const blocked = statusError(row);
   if (blocked) throw new AuthError(403, blocked);
+  if (adminOnly && !isAdminRow(row)) throw new AuthError(403, "This account doesn't have admin access");
   clearLimit(`login:${email}`);
-  return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
+  return { token: await issueToken(pool, row.id, adminOnly ? `admin · ${ctx.device}` : ctx.device), user: publicUser(row) };
 }
 
 export async function logout(pool, auth) {
