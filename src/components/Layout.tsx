@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Building2, CalendarDays, Dumbbell, LineChart, Settings, ShieldCheck, Users } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Building2, CalendarDays, Dumbbell, Loader2, LineChart, LogOut, Settings, ShieldCheck, Users } from 'lucide-react';
+import { UserAvatar } from './UserAvatar';
+import { useLogout } from '../hooks/useLogout';
 import { RestTimerBar } from './RestTimerBar';
 import { UpdatePrompt } from './UpdatePrompt';
 import { useRestTimer } from '../context/RestTimer';
@@ -23,6 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const timer = useRestTimer();
   const user = useAuth()?.user;
+  const { leave, leaving } = useLogout();
   const manage = [...(user?.role === 'admin' ? [ADMIN_NAV] : []), ...(user?.isOwner ? [OWNER_NAV] : [])];
   return (
     <div className="min-h-dvh lg:flex">
@@ -70,6 +73,20 @@ export function Layout({ children }: { children: ReactNode }) {
             </>
           )}
         </nav>
+        {user && (
+          <div className="mt-4 flex items-center gap-2.5 rounded-lg bg-white/[0.04] p-2.5">
+            <Link to="/settings" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md" title="Your account">
+              <UserAvatar name={user.name || user.email} avatarKey={user.avatarKey} size="xs" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-white">{user.name || 'You'}</span>
+                <span className="block truncate text-[11px] text-floor-mute">{user.email}</span>
+              </span>
+            </Link>
+            <button className="rounded-md p-1.5 text-floor-mute transition hover:bg-white/10 hover:text-white disabled:opacity-50" onClick={() => void leave()} disabled={leaving} aria-label="Log out" title="Log out">
+              {leaving ? <Loader2 size={16} className="animate-spin" /> : <LogOut size={16} />}
+            </button>
+          </div>
+        )}
       </aside>
 
       <div className="min-w-0 flex-1">

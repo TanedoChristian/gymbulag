@@ -12,8 +12,9 @@ import { Modal, NumberField, PageHeader, Segmented, Toggle } from '../components
 import { useToast } from '../context/Toast';
 import { useConfirm } from '../context/Confirm';
 import { fetchMe, getSyncStatus, runSync, subscribeSync, type ServerInfo } from '../lib/sync';
-import { ageFromBirthDate, changePassword, logOut, setMyAvatar, updateProfile, useAuth } from '../lib/auth';
+import { ageFromBirthDate, changePassword, setMyAvatar, updateProfile, useAuth } from '../lib/auth';
 import { UserAvatar } from '../components/UserAvatar';
+import { useLogout } from '../hooks/useLogout';
 import { AvatarPicker } from '../components/AvatarPicker';
 import { BIO_MAX, EXPERIENCE_OPTIONS, GENDER_OPTIONS, GOAL_OPTIONS, labelOf, type Experience, type FitnessGoal, type Gender } from '../lib/profile';
 import { TdeeCalculator } from '../components/TdeeCalculator';
@@ -91,12 +92,11 @@ function NutritionGroup() {
 
 function AccountGroup() {
   const toast = useToast();
-  const confirm = useConfirm();
   const auth = useAuth();
   const status = useSyncExternalStore(subscribeSync, getSyncStatus);
   const [info, setInfo] = useState<ServerInfo | null>(null);
   const [editing, setEditing] = useState<'profile' | 'password' | null>(null);
-  const [leaving, setLeaving] = useState(false);
+  const { leave, leaving } = useLogout();
   const [, tick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => tick((n) => n + 1), 30_000);
@@ -116,20 +116,6 @@ function AccountGroup() {
     if (r) toast(`Synced · ${r.pushed} up, ${r.pulled} down`, { tone: 'success' });
   };
 
-  const leave = async () => {
-    const ok = await confirm({ title: 'Log out?', message: 'Your data stays in your account. It will be removed from this device until you log in again.', confirmLabel: 'Log out' });
-    if (!ok) return;
-    setLeaving(true);
-    if (await logOut()) return;
-    setLeaving(false);
-    const force = await confirm({
-      title: "Couldn't sync",
-      message: `${getSyncStatus().error ?? 'The server could not be reached'}. Changes made on this device since the last sync will be lost if you log out now.`,
-      confirmLabel: 'Log out anyway',
-      danger: true,
-    });
-    if (force) await logOut({ force: true });
-  };
 
   const line =
     status.state === 'syncing' ? (
