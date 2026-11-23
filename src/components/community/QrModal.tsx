@@ -64,7 +64,7 @@ export function QrModal({ community, onClose, onRegenerate }: { community: Commu
           <div className="mx-auto aspect-square w-full max-w-[18rem] overflow-hidden rounded-xl bg-white p-2 ring-1 ring-steel/10">
             {src ? <img src={src} alt={`QR code to join ${community.name}`} className="h-full w-full" /> : <div className="h-full w-full animate-pulse rounded-lg bg-zinc-100" />}
           </div>
-          {!community.active && <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">Joining is switched off, so scanning this code won't add anyone until it is switched back on.</p>}
+          {!community.active && <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">This community is deactivated, so scanning this code won't add anyone until an admin reactivates it.</p>}
           <p className="break-all text-xs text-zinc-500 dark:text-zinc-400">{url}</p>
           <div className="grid grid-cols-3 gap-2">
             <button className="btn-secondary" onClick={copy}>

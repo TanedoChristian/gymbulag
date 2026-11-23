@@ -26,18 +26,6 @@ export interface Community {
   owners: CommunityOwner[];
 }
 
-export interface AdminUser {
-  id: number;
-  email: string;
-  name: string;
-  role: string;
-  status: AccountStatus;
-  createdAt: number;
-  statusChangedAt: number | null;
-  lastSeen: number | null;
-  communities: number;
-}
-
 export interface Member {
   userId: number;
   name: string;
@@ -57,6 +45,8 @@ export interface MyCommunity {
   id: number;
   name: string;
   location: string;
+  /** False when an admin deactivated the community. */
+  active: boolean;
   joinedAt: number;
 }
 
@@ -91,8 +81,6 @@ export const setMemberStatus = (communityId: number, userId: number, status: Mem
 
 /* -------------------------------------------------------------------- admin */
 
-export const adminUsers = (q = '') => adminApi<{ users: AdminUser[]; totals: Record<AccountStatus, number> }>(`/admin/users?q=${encodeURIComponent(q)}`);
-export const setUserStatus = (userId: number, status: AccountStatus) => adminApi('/admin/users/status', { userId, status });
 export const adminCommunities = () => adminApi<{ communities: Community[] }>('/admin/communities').then((r) => r.communities);
 export const createCommunity = (name: string, location: string) => adminApi<{ community: Community }>('/admin/communities', { name, location }).then((r) => r.community);
 export const updateCommunity = (id: number, patch: { name?: string; location?: string; active?: boolean; regenerateCode?: boolean }) =>

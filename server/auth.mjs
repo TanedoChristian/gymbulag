@@ -32,24 +32,24 @@ export function ageOn(birthDate, today = new Date()) {
   return age;
 }
 
-function checkEmail(email) {
+export function checkEmail(email) {
   if (!email) throw new AuthError(400, 'Enter your email');
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new AuthError(400, "That doesn't look like an email address");
 }
 
-function checkPassword(pw) {
+export function checkPassword(pw) {
   if (typeof pw !== 'string' || pw.length < 8) throw new AuthError(400, 'Password must be at least 8 characters');
   if (pw.length > 200) throw new AuthError(400, 'Password is too long');
 }
 
-function checkName(v) {
+export function checkName(v) {
   const name = String(v ?? '').trim().replace(/\s+/g, ' ');
   if (!name) throw new AuthError(400, 'Enter your name');
   if (name.length > 100) throw new AuthError(400, 'Name is too long');
   return name;
 }
 
-function checkBirthDate(v) {
+export function checkBirthDate(v) {
   const s = String(v ?? '');
   const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   const d = m && new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
@@ -105,7 +105,7 @@ setInterval(() => {
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
 
-async function issueToken(pool, userId, device) {
+export async function issueToken(pool, userId, device) {
   const token = randomBytes(32).toString('base64url');
   const now = Date.now();
   await pool.query('INSERT INTO auth_tokens (token_hash, user_id, device, created_at, last_used_at) VALUES ($1, $2, $3, $4, $5)', [sha256(token), userId, String(device ?? '').slice(0, 255), now, now]);
@@ -189,25 +189,64 @@ export async function register(pool, body, ctx) {
     if (Number(n) === 0) for (const t of Object.keys(TABLES)) await conn.query(`UPDATE "${t}" SET user_id = $1 WHERE user_id = 0`, [user.id]);
     return user;
   });
+  await recordLogin(pool, { userId: row.id, email, success: true, reason: 'signup' }, ctx);
   return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
+}
+
+/** Log in. adminOnly: the admin panel's own sign-in, which only admin accounts get past. */
+/** Write one row of login activity. Never fails the request it belongs to. */
+export async function recordLogin(pool, { userId = null, email = '', success, reason, portal = 'app' }, ctx) {
+  try {
+    await pool.query('INSERT INTO login_events (user_id, email, success, reason, portal, ip, user_agent, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)', [
+      userId,
+      String(email).slice(0, 254),
+      success ? 1 : 0,
+      reason,
+      portal,
+      String(ctx?.ip ?? '').replace(/^::ffff:/, '').slice(0, 64),
+      String(ctx?.device ?? '').slice(0, 255),
+      Date.now(),
+    ]);
+  } catch (e) {
+    console.error('[auth] could not record login activity:', e.message);
+  }
 }
 
 /** Log in. adminOnly: the admin panel's own sign-in, which only admin accounts get past. */
 export async function login(pool, body, ctx, { adminOnly = false } = {}) {
   const email = normalizeEmail(body.email);
   if (!email || typeof body.password !== 'string' || !body.password) throw new AuthError(400, 'Enter your email and password');
-  limit(`login-ip:${ctx.ip}`, 30, 15 * 60_000, 'Too many login attempts.');
-  limit(`login:${email}`, 8, 15 * 60_000, 'Too many attempts for this account.');
-  const {
+  const portal = adminOnly ? 'admin' : 'app';
+  let row;
+  const fail = async (reason, status, message) => {
+    await recordLogin(pool, { userId: row?.id ?? null, email, success: false, reason, portal }, ctx);
+    throw new AuthError(status, message);
+  };
+  try {
+    limit(`login-ip:${ctx.ip}`, 30, 15 * 60_000, 'Too many login attempts.');
+    limit(`login:${email}`, 8, 15 * 60_000, 'Too many attempts for this account.');
+  } catch (e) {
+    await fail('rate_limited', e.status, e.message);
+  }
+  ({
     rows: [row],
-  } = await pool.query(`SELECT ${USER_COLUMNS} FROM users u WHERE u.email = $1`, [email]);
+  } = await pool.query(`SELECT ${USER_COLUMNS} FROM users u WHERE u.email = $1`, [email]));
   const ok = await verifyPassword(body.password, row?.password_hash ?? DUMMY_HASH);
-  if (!row || !ok) throw new AuthError(401, 'Wrong email or password');
+  if (!row) await fail('unknown_email', 401, 'Wrong email or password');
+  if (!ok) await fail('wrong_password', 401, 'Wrong email or password');
   const blocked = statusError(row);
-  if (blocked) throw new AuthError(403, blocked);
-  if (adminOnly && !isAdminRow(row)) throw new AuthError(403, "This account doesn't have admin access");
+  if (blocked) await fail(row.status, 403, blocked);
+  if (adminOnly && !isAdminRow(row)) await fail('not_admin', 403, "This account doesn't have admin access");
   clearLimit(`login:${email}`);
+  await recordLogin(pool, { userId: row.id, email, success: true, reason: 'ok', portal }, ctx);
   return { token: await issueToken(pool, row.id, adminOnly ? `admin · ${ctx.device}` : ctx.device), user: publicUser(row) };
+}
+
+/** Open the admin panel as the admin who is already logged into the app (no second password prompt). */
+export async function adminSessionFromApp(pool, auth, ctx) {
+  if (auth.user.role !== 'admin') throw new AuthError(403, "This account doesn't have admin access");
+  await recordLogin(pool, { userId: auth.user.id, email: auth.user.email, success: true, reason: 'from_app', portal: 'admin' }, ctx);
+  return { token: await issueToken(pool, auth.user.id, `admin · ${ctx.device}`), user: auth.user };
 }
 
 export async function logout(pool, auth) {

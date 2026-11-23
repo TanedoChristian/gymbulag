@@ -62,6 +62,11 @@ export async function adminLogIn(email: string, password: string): Promise<void>
   setSession(await api<AdminSession>('/admin/login', { email, password }, { token: null }));
 }
 
+/** Open the admin panel as the admin already logged into the app, without typing the password again. */
+export async function adminFromApp(): Promise<void> {
+  setSession(await api<AdminSession>('/admin/session', {}));
+}
+
 export async function adminLogOut(): Promise<void> {
   const token = session?.token;
   setSession(null);

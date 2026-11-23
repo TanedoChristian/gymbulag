@@ -60,7 +60,7 @@ export default function GymPage() {
                         <MapPin size={12} /> {current.location}
                       </span>
                     )}
-                    {!current.active && <span className="rounded bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-300">New members can't join right now</span>}
+                    {!current.active && <span className="rounded bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-300">Deactivated: new members can't join</span>}
                   </div>
                 )}
                 <MembersPanel key={current.id} communityId={current.id} />

@@ -1,426 +1,57 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { format, formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, Ban, Building2, CircleOff, Loader2, LogOut, MapPin, MoreVertical, Plus, QrCode, Search, ShieldCheck, Trash2, UserCog, Users, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { EmptyState, Modal, StatTile, TabBar, Toggle } from '../components/ui';
-import { Menu } from '../components/Menu';
-import { QrModal } from '../components/community/QrModal';
-import { MembersPanel } from '../components/community/MembersPanel';
-import { useToast } from '../context/Toast';
+import { lazy, Suspense, useEffect, useState, type FormEvent } from 'react';
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom';
+import { ArrowLeft, Building2, KeyRound, LayoutDashboard, Loader2, LogOut, Menu as MenuIcon, ShieldCheck, Users as UsersIcon, X } from 'lucide-react';
 import { useConfirm } from '../context/Confirm';
-import { adminLogIn, adminLogOut, useAdminSession } from '../lib/adminAuth';
-import {
-  addOwner,
-  adminCommunities,
-  adminUsers,
-  createCommunity,
-  deleteCommunity,
-  removeOwner,
-  setUserStatus,
-  updateCommunity,
-  type AccountStatus,
-  type AdminUser,
-  type Community,
-} from '../lib/community';
+import { useAuth } from '../lib/auth';
+import { adminFromApp, adminLogIn, adminLogOut, useAdminSession } from '../lib/adminAuth';
+import { Avatar, LoadingBlock } from './admin/kit';
 
-type Tab = 'users' | 'communities';
+const Overview = lazy(() => import('./admin/Overview'));
+const Users = lazy(() => import('./admin/Users'));
+const Communities = lazy(() => import('./admin/Communities'));
+const Logins = lazy(() => import('./admin/Logins'));
 
-const STATUS_STYLE: Record<AccountStatus, string> = {
-  active: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
-  inactive: 'bg-amber-500/10 text-amber-700 dark:text-amber-300',
-  blocked: 'bg-red-500/10 text-red-600 dark:text-red-400',
-};
-
-function Badge({ className, children }: { className: string; children: string }) {
-  return <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${className}`}>{children}</span>;
-}
-
-function Loading() {
-  return (
-    <div className="flex justify-center py-12 text-zinc-400">
-      <Loader2 className="animate-spin" />
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ users */
-
-function UsersTab() {
-  const toast = useToast();
-  const confirm = useConfirm();
-  const me = useAdminSession()?.user;
-  const [q, setQ] = useState('');
-  const [data, setData] = useState<{ users: AdminUser[]; totals: Record<AccountStatus, number> } | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState<number | null>(null);
-
-  const load = useCallback((term: string) => {
-    setError(null);
-    adminUsers(term)
-      .then(setData)
-      .catch((e) => setError((e as Error).message));
-  }, []);
-
-  // Search as you type, a moment after the last key.
-  useEffect(() => {
-    const t = setTimeout(() => load(q), q ? 250 : 0);
-    return () => clearTimeout(t);
-  }, [q, load]);
-
-  const change = async (u: AdminUser, status: AccountStatus) => {
-    if (status !== 'active') {
-      const ok = await confirm({
-        title: status === 'blocked' ? `Block ${u.name || u.email}?` : `Set ${u.name || u.email} inactive?`,
-        message:
-          status === 'blocked'
-            ? "They're logged out on every device and can't log in again. Their data is kept. You can unblock them later."
-            : "They're logged out on every device and can't log in until the account is reactivated. Their data is kept.",
-        confirmLabel: status === 'blocked' ? 'Block' : 'Set inactive',
-        danger: true,
-      });
-      if (!ok) return;
-    }
-    setBusy(u.id);
-    try {
-      await setUserStatus(u.id, status);
-      toast(status === 'active' ? 'Account activated' : status === 'blocked' ? 'Account blocked' : 'Account set inactive', { tone: 'success' });
-      load(q);
-    } catch (e) {
-      toast((e as Error).message, { tone: 'error' });
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      {data && (
-        <div className="grid grid-cols-3 gap-3">
-          <StatTile label="Active" value={data.totals.active} />
-          <StatTile label="Inactive" value={data.totals.inactive} />
-          <StatTile label="Blocked" value={data.totals.blocked} />
-        </div>
-      )}
-      <label className="relative block">
-        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-        <input className="input !pl-9" placeholder="Search name or email" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search users" />
-      </label>
-      {error ? (
-        <p className="card p-4 text-sm text-red-600 dark:text-red-400">{error}</p>
-      ) : !data ? (
-        <Loading />
-      ) : data.users.length === 0 ? (
-        <EmptyState icon={<Users size={22} />} title="No users found" />
-      ) : (
-        <ul className="card divide-y divide-zinc-100 dark:divide-zinc-800">
-          {data.users.map((u) => {
-            const self = u.id === me?.id;
-            const items = (
-              [
-                u.status !== 'active' && { label: 'Activate', icon: <ShieldCheck size={16} />, onSelect: () => change(u, 'active') },
-                u.status !== 'inactive' && { label: 'Set inactive', icon: <CircleOff size={16} />, onSelect: () => change(u, 'inactive') },
-                u.status !== 'blocked' && { label: 'Block', icon: <Ban size={16} />, danger: true, onSelect: () => change(u, 'blocked') },
-              ] as const
-            ).filter((x) => !!x);
-            return (
-              <li key={u.id} className="flex items-center gap-3 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className="truncate text-sm font-semibold">{u.name || '—'}</span>
-                    <Badge className={STATUS_STYLE[u.status] ?? STATUS_STYLE.active}>{u.status}</Badge>
-                    {u.role === 'admin' && <Badge className="bg-volt-500/15 text-steel dark:text-volt-400">admin</Badge>}
-                    {self && <Badge className="bg-zinc-500/10 text-zinc-500">you</Badge>}
-                  </div>
-                  <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">{u.email}</div>
-                  <div className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    Joined {format(u.createdAt, 'd MMM yyyy')}
-                    {u.lastSeen ? ` · seen ${formatDistanceToNow(u.lastSeen, { addSuffix: true })}` : ' · not signed in'}
-                    {u.communities > 0 && ` · ${u.communities} communit${u.communities === 1 ? 'y' : 'ies'}`}
-                  </div>
-                </div>
-                {busy === u.id ? (
-                  <Loader2 size={18} className="animate-spin text-zinc-400" />
-                ) : (
-                  !self && <Menu label={`Actions for ${u.name || u.email}`} trigger={<MoreVertical size={18} />} items={[...items]} />
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-      {data && data.users.length >= 500 && <p className="text-center text-xs text-zinc-500">Showing the newest 500. Search to find others.</p>}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------ communities */
-
-function CommunityForm({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial?: Community | null; onSaved: (c: Community) => void }) {
-  const toast = useToast();
-  const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    if (open) {
-      setName(initial?.name ?? '');
-      setLocation(initial?.location ?? '');
-    }
-  }, [open, initial]);
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const c = initial ? await updateCommunity(initial.id, { name, location }) : await createCommunity(name, location);
-      onSaved(c);
-      onClose();
-      toast(initial ? 'Community updated' : 'Community created', { tone: 'success' });
-    } catch (err) {
-      toast((err as Error).message, { tone: 'error' });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title={initial ? 'Edit community' : 'New gym community'} size="sm">
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <span className="label">Gym name</span>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required autoFocus placeholder="e.g. Iron Temple Makati" />
-        </label>
-        <label className="block">
-          <span className="label">Location (optional)</span>
-          <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={255} placeholder="Address or branch" />
-        </label>
-        <button className="btn-primary w-full" disabled={busy || !name.trim()}>
-          {busy && <Loader2 size={16} className="animate-spin" />}
-          {initial ? 'Save' : 'Create and get QR code'}
-        </button>
-      </form>
-    </Modal>
-  );
-}
-
-function OwnersModal({ community, onClose, onSaved }: { community: Community | null; onClose: () => void; onSaved: (c: Community) => void }) {
-  const toast = useToast();
-  const [email, setEmail] = useState('');
-  const [busy, setBusy] = useState(false);
-  useEffect(() => setEmail(''), [community?.id]);
-
-  const add = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!community) return;
-    setBusy(true);
-    try {
-      onSaved(await addOwner(community.id, email));
-      setEmail('');
-      toast('Gym owner added', { tone: 'success' });
-    } catch (err) {
-      toast((err as Error).message, { tone: 'error', duration: 6000 });
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const remove = async (userId: number) => {
-    if (!community) return;
-    try {
-      onSaved(await removeOwner(community.id, userId));
-    } catch (err) {
-      toast((err as Error).message, { tone: 'error' });
-    }
-  };
-
-  return (
-    <Modal open={!!community} onClose={onClose} title={community ? `${community.name} · Gym owners` : ''} size="sm">
-      {community && (
-        <div className="space-y-4">
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">Gym owners see this community's members and how often they train, and can block or unblock them. They can't create communities or change the QR code.</p>
-          {community.owners.length === 0 ? (
-            <p className="rounded-lg bg-zinc-100 p-3 text-sm text-zinc-500 dark:bg-zinc-800">No gym owners yet.</p>
-          ) : (
-            <ul className="divide-y divide-zinc-100 rounded-lg ring-1 ring-zinc-100 dark:divide-zinc-800 dark:ring-zinc-800">
-              {community.owners.map((o) => (
-                <li key={o.id} className="flex items-center gap-2 px-3 py-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-semibold">{o.name || '—'}</div>
-                    <div className="truncate text-xs text-zinc-500">{o.email}</div>
-                  </div>
-                  <button className="icon-btn" aria-label={`Remove ${o.email}`} onClick={() => remove(o.id)}>
-                    <X size={16} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          <form onSubmit={add} className="flex gap-2">
-            <input className="input flex-1" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="owner@email.com" required aria-label="Gym owner's email" />
-            <button className="btn-primary" disabled={busy}>
-              {busy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Add
-            </button>
-          </form>
-          <p className="text-xs text-zinc-500">They need a Gymbulag account first. Access applies the next time their app refreshes.</p>
-        </div>
-      )}
-    </Modal>
-  );
-}
-
-function CommunitiesTab() {
-  const toast = useToast();
-  const confirm = useConfirm();
-  const [list, setList] = useState<Community[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<{ open: boolean; edit: Community | null }>({ open: false, edit: null });
-  const [qrId, setQrId] = useState<number | null>(null);
-  const [ownersId, setOwnersId] = useState<number | null>(null);
-  const [membersId, setMembersId] = useState<number | null>(null);
-
-  const load = useCallback(() => {
-    adminCommunities()
-      .then(setList)
-      .catch((e) => setError((e as Error).message));
-  }, []);
-  useEffect(load, [load]);
-
-  const put = (c: Community) => setList((l) => (l?.some((x) => x.id === c.id) ? l.map((x) => (x.id === c.id ? c : x)) : [c, ...(l ?? [])]));
-  const byId = useMemo(() => new Map((list ?? []).map((c) => [c.id, c])), [list]);
-
-  const toggleJoin = async (c: Community, active: boolean) => {
-    try {
-      put(await updateCommunity(c.id, { active }));
-    } catch (e) {
-      toast((e as Error).message, { tone: 'error' });
-    }
-  };
-
-  const remove = async (c: Community) => {
-    const ok = await confirm({ title: `Delete ${c.name}?`, message: `All ${c.members} members are removed from it and its QR code stops working. Members keep their accounts and workout data.`, confirmLabel: 'Delete', danger: true });
-    if (!ok) return;
-    try {
-      await deleteCommunity(c.id);
-      setList((l) => l?.filter((x) => x.id !== c.id) ?? null);
-      toast('Community deleted', { tone: 'success' });
-    } catch (e) {
-      toast((e as Error).message, { tone: 'error' });
-    }
-  };
-
-  const membersOf = membersId ? byId.get(membersId) : null;
-
-  return (
-    <div className="space-y-4">
-      <button className="btn-primary w-full sm:w-auto" onClick={() => setForm({ open: true, edit: null })}>
-        <Plus size={16} /> New community
-      </button>
-      {error ? (
-        <p className="card p-4 text-sm text-red-600 dark:text-red-400">{error}</p>
-      ) : !list ? (
-        <Loading />
-      ) : list.length === 0 ? (
-        <EmptyState icon={<Building2 size={22} />} title="No communities yet">
-          Create one for each gym. You'll get a QR code to put up at the gym; people who scan it join straight away.
-        </EmptyState>
-      ) : (
-        <div className="grid gap-3 lg:grid-cols-2">
-          {list.map((c) => (
-            <article key={c.id} className="card space-y-3 p-4">
-              <div className="flex items-start gap-3">
-                <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-display text-lg font-bold tracking-wide">{c.name}</h3>
-                  {c.location && (
-                    <p className="flex items-center gap-1 truncate text-xs text-zinc-500 dark:text-zinc-400">
-                      <MapPin size={12} /> {c.location}
-                    </p>
-                  )}
-                </div>
-                <Menu
-                  label={`Actions for ${c.name}`}
-                  trigger={<MoreVertical size={18} />}
-                  items={[
-                    { label: 'Edit details', icon: <UserCog size={16} />, onSelect: () => setForm({ open: true, edit: c }) },
-                    { label: 'Delete community', icon: <Trash2 size={16} />, danger: true, onSelect: () => remove(c) },
-                  ]}
-                />
-              </div>
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-                <span>
-                  <b className="tabular">{c.members}</b> members
-                </span>
-                <span>
-                  <b className="tabular">{c.joinedThisWeek}</b> new this week
-                </span>
-                {c.blocked > 0 && (
-                  <span className="text-red-600 dark:text-red-400">
-                    <b className="tabular">{c.blocked}</b> blocked
-                  </span>
-                )}
-              </div>
-              <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                Owners: {c.owners.length ? c.owners.map((o) => o.name || o.email).join(', ') : <i>none yet</i>}
-              </div>
-              <div className="flex items-center justify-between gap-3 rounded-lg bg-zinc-100/70 px-3 py-2 dark:bg-white/[0.04]">
-                <span className="text-sm font-medium">Accept new members by QR</span>
-                <Toggle checked={c.active} onChange={(v) => toggleJoin(c, v)} label={`Accept new members for ${c.name}`} />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button className="btn-secondary !px-2" onClick={() => setQrId(c.id)}>
-                  <QrCode size={16} /> QR
-                </button>
-                <button className="btn-secondary !px-2" onClick={() => setMembersId(c.id)}>
-                  <Users size={16} /> Members
-                </button>
-                <button className="btn-secondary !px-2" onClick={() => setOwnersId(c.id)}>
-                  <UserCog size={16} /> Owners
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-
-      <CommunityForm
-        open={form.open}
-        initial={form.edit}
-        onClose={() => setForm({ open: false, edit: null })}
-        onSaved={(c) => {
-          put(c);
-          if (!form.edit) setQrId(c.id);
-        }}
-      />
-      <QrModal community={qrId ? byId.get(qrId) ?? null : null} onClose={() => setQrId(null)} onRegenerate={async () => {
-          if (qrId) put(await updateCommunity(qrId, { regenerateCode: true }));
-        }} />
-      <OwnersModal community={ownersId ? byId.get(ownersId) ?? null : null} onClose={() => setOwnersId(null)} onSaved={put} />
-      <Modal open={!!membersOf} onClose={() => setMembersId(null)} title={membersOf ? `${membersOf.name} · Members` : ''} size="lg">
-        {membersOf && <MembersPanel asAdmin communityId={membersOf.id} onChanged={load} />}
-      </Modal>
-    </div>
-  );
-}
+const NAV = [
+  { to: '/admin', label: 'Overview', icon: LayoutDashboard, end: true },
+  { to: '/admin/users', label: 'Users', icon: UsersIcon },
+  { to: '/admin/communities', label: 'Gym communities', icon: Building2 },
+  { to: '/admin/logins', label: 'Login activity', icon: KeyRound },
+];
 
 function AdminLogin() {
+  const app = useAuth();
+  const appAdmin = app && !app.expired && app.user.role === 'admin' ? app.user : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'form' | 'app' | null>(null);
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    setBusy(true);
+    setBusy('form');
     setError(null);
     try {
       await adminLogIn(email.trim(), password);
     } catch (err) {
       setError((err as Error).message);
-      setBusy(false);
+      setBusy(null);
+    }
+  };
+
+  const continueAsApp = async () => {
+    setBusy('app');
+    setError(null);
+    try {
+      await adminFromApp();
+    } catch (err) {
+      setError((err as Error).message);
+      setBusy(null);
     }
   };
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-rack px-4 py-10">
-      <form onSubmit={submit} className="card w-full max-w-sm space-y-4 p-6">
+      <div className="card w-full max-w-sm space-y-4 p-6">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-md bg-rack text-volt-500">
             <ShieldCheck size={22} />
@@ -430,64 +61,154 @@ function AdminLogin() {
             <h1 className="font-display text-2xl font-bold leading-tight tracking-wide">Admin sign in</h1>
           </div>
         </div>
-        <label className="block">
-          <span className="label">Email</span>
-          <input className="input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus />
-        </label>
-        <label className="block">
-          <span className="label">Password</span>
-          <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {error && <p className="rounded-lg bg-red-500/10 p-2.5 text-sm text-red-600 dark:text-red-400" role="alert">{error}</p>}
-        <button className="btn-primary w-full" disabled={busy}>
-          {busy && <Loader2 size={16} className="animate-spin" />} Sign in
-        </button>
-        <p className="text-center text-xs text-steel-mute dark:text-floor-mute">Admin accounts only.</p>
-      </form>
+
+        {appAdmin && (
+          <>
+            <button className="btn-primary w-full" onClick={continueAsApp} disabled={!!busy}>
+              {busy === 'app' ? <Loader2 size={16} className="animate-spin" /> : <Avatar name={appAdmin.name || appAdmin.email} size="sm" />}
+              Continue as {appAdmin.name || appAdmin.email}
+            </button>
+            <div className="flex items-center gap-3 text-xs text-steel-mute dark:text-floor-mute">
+              <span className="h-px flex-1 bg-steel/15 dark:bg-white/10" /> or use another account <span className="h-px flex-1 bg-steel/15 dark:bg-white/10" />
+            </div>
+          </>
+        )}
+
+        <form onSubmit={submit} className="space-y-4">
+          <label className="block">
+            <span className="label">Email</span>
+            <input className="input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required autoFocus={!appAdmin} />
+          </label>
+          <label className="block">
+            <span className="label">Password</span>
+            <input className="input" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </label>
+          {error && (
+            <p className="rounded-lg bg-red-500/10 p-2.5 text-sm text-red-600 dark:text-red-400" role="alert">
+              {error}
+            </p>
+          )}
+          <button className={appAdmin ? 'btn-secondary w-full' : 'btn-primary w-full'} disabled={!!busy}>
+            {busy === 'form' && <Loader2 size={16} className="animate-spin" />} Sign in
+          </button>
+        </form>
+        <div className="flex items-center justify-between text-xs text-steel-mute dark:text-floor-mute">
+          <span>Admin accounts only.</span>
+          <Link to="/" className="link-accent font-semibold">
+            Back to the app
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
 
-/** The admin portal: its own sign-in and its own frame, separate from the workout app. */
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const session = useAdminSession()!;
+  const confirm = useConfirm();
+  const signOut = async () => {
+    if (await confirm({ title: 'Sign out of the admin panel?', message: 'Your app login on this device stays as it is.', confirmLabel: 'Sign out' })) await adminLogOut();
+  };
+  return (
+    <div className="flex h-full flex-col px-3 py-5">
+      <div className="mb-7 flex items-center gap-2.5 px-2">
+        <img src="/icon.svg" alt="" className="h-8 w-8" />
+        <div className="leading-tight">
+          <div className="font-display text-lg font-bold tracking-wide">Gymbulag</div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-volt-500">Admin</div>
+        </div>
+      </div>
+      <nav className="flex flex-1 flex-col gap-1" aria-label="Admin">
+        {NAV.map(({ to, label, icon: Icon, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            onClick={onNavigate}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-md px-3 py-2.5 font-display text-sm font-semibold tracking-wide transition ${
+                isActive ? 'bg-volt-500 text-volt-ink' : 'text-floor-mute hover:bg-white/5 hover:text-white'
+              }`
+            }
+          >
+            <Icon size={18} />
+            {label}
+          </NavLink>
+        ))}
+        <div className="my-3 h-px bg-white/10" />
+        <Link to="/" onClick={onNavigate} className="flex items-center gap-3 rounded-md px-3 py-2.5 font-display text-sm font-semibold tracking-wide text-floor-mute transition hover:bg-white/5 hover:text-white">
+          <ArrowLeft size={18} /> Back to app
+        </Link>
+      </nav>
+      <div className="mt-4 flex items-center gap-2.5 rounded-lg bg-white/[0.04] p-2.5">
+        <Avatar name={session.user.name || session.user.email} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-white">{session.user.name || 'Admin'}</div>
+          <div className="truncate text-[11px] text-floor-mute">{session.user.email}</div>
+        </div>
+        <button className="rounded-md p-1.5 text-floor-mute transition hover:bg-white/10 hover:text-white" onClick={signOut} aria-label="Sign out" title="Sign out">
+          <LogOut size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** The admin portal: its own sign-in and its own console layout, separate from the workout app. */
 export default function AdminPage() {
   const session = useAdminSession();
-  const confirm = useConfirm();
-  const [tab, setTab] = useState<Tab>('users');
-  if (!session) return <AdminLogin />;
+  const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => {
+    document.title = 'Gymbulag Admin';
+    return () => {
+      document.title = 'Gymbulag';
+    };
+  }, []);
 
-  const signOut = async () => {
-    if (await confirm({ title: 'Sign out of the admin panel?', confirmLabel: 'Sign out' })) await adminLogOut();
-  };
+  if (!session) return <AdminLogin />;
+  const current = NAV.find((n) => (n.end ? pathname === n.to : pathname.startsWith(n.to)));
 
   return (
-    <div className="min-h-dvh pb-16">
-      <header className="sticky top-0 z-30 bg-rack text-steel-bright shadow-rack" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-        <div className="mx-auto flex h-14 max-w-app items-center gap-3 px-4 lg:max-w-app-wide lg:px-8">
-          <ShieldCheck size={20} className="text-volt-500" />
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-xl font-bold leading-tight tracking-wide">Gymbulag Admin</h1>
-            <div className="truncate text-xs text-floor-mute">{session.user.name || session.user.email}</div>
-          </div>
-          <Link to="/" className="icon-btn text-steel-bright hover:bg-white/10" aria-label="Back to the app" title="Back to the app">
-            <ArrowLeft size={18} />
-          </Link>
-          <button className="icon-btn text-steel-bright hover:bg-white/10" onClick={signOut} aria-label="Sign out" title="Sign out">
-            <LogOut size={18} />
-          </button>
-        </div>
+    <div className="min-h-dvh lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 bg-rack text-steel-bright lg:block">
+        <SidebarContent />
+      </aside>
+
+      {/* Phones and tablets: top bar + slide-out menu */}
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 bg-rack px-4 text-steel-bright lg:hidden" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <button className="rounded-md p-1.5 hover:bg-white/10" onClick={() => setMenuOpen(true)} aria-label="Open menu">
+          <MenuIcon size={20} />
+        </button>
+        <span className="font-display text-lg font-bold tracking-wide">{current?.label ?? 'Admin'}</span>
+        <span className="ml-auto rounded bg-volt-500 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-volt-ink">Admin</span>
       </header>
-      <div className="mx-auto max-w-app space-y-4 px-4 pt-4 lg:max-w-app-wide lg:px-8">
-        <TabBar<Tab>
-          ariaLabel="Admin sections"
-          value={tab}
-          onChange={setTab}
-          tabs={[
-            { value: 'users', label: 'Users', icon: <Users size={16} /> },
-            { value: 'communities', label: 'Gym communities', icon: <Building2 size={16} /> },
-          ]}
-        />
-        {tab === 'users' ? <UsersTab /> : <CommunitiesTab />}
-      </div>
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMenuOpen(false)} />
+          <aside className="relative h-full w-72 max-w-[85%] animate-fade-in bg-rack text-steel-bright">
+            <button className="absolute right-3 top-4 rounded-md p-1.5 text-floor-mute hover:bg-white/10" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+              <X size={18} />
+            </button>
+            <SidebarContent onNavigate={() => setMenuOpen(false)} />
+          </aside>
+        </div>
+      )}
+
+      <main className="min-w-0 flex-1 px-4 pb-16 pt-5 lg:px-8 lg:pt-8">
+        <div className="mx-auto max-w-7xl">
+          <Suspense fallback={<LoadingBlock />}>
+            <Routes>
+              <Route path="/admin" element={<Overview />} />
+              <Route path="/admin/users" element={<Users />} />
+              <Route path="/admin/communities" element={<Communities />} />
+              <Route path="/admin/logins" element={<Logins />} />
+              <Route path="*" element={<Navigate to="/admin" replace />} />
+            </Routes>
+          </Suspense>
+        </div>
+      </main>
     </div>
   );
 }

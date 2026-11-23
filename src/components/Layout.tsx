@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Building2, CalendarDays, Dumbbell, LineChart, Settings, Users } from 'lucide-react';
+import { Building2, CalendarDays, Dumbbell, LineChart, Settings, ShieldCheck, Users } from 'lucide-react';
 import { RestTimerBar } from './RestTimerBar';
 import { UpdatePrompt } from './UpdatePrompt';
 import { useRestTimer } from '../context/RestTimer';
@@ -15,13 +15,15 @@ const NAV = [
 ];
 
 /** Gym owners only. Shown in the desktop sidebar; on phones it's reached from the Community tab. */
+/** "Manage" links: admins and gym owners only. In the desktop sidebar; on phones they're in the Community tab. */
+const ADMIN_NAV = { to: '/admin', label: 'Admin panel', icon: ShieldCheck, match: () => false };
 const OWNER_NAV = { to: '/gym', label: 'My gym', icon: Building2, match: (p: string) => p.startsWith('/gym') };
 
 export function Layout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
   const timer = useRestTimer();
   const user = useAuth()?.user;
-  const extra = user?.isOwner ? [OWNER_NAV] : [];
+  const manage = [...(user?.role === 'admin' ? [ADMIN_NAV] : []), ...(user?.isOwner ? [OWNER_NAV] : [])];
   return (
     <div className="min-h-dvh lg:flex">
       <aside className="sticky top-0 z-40 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/10 bg-rack px-3 py-5 text-steel-bright lg:flex" aria-label="Main">
@@ -30,7 +32,7 @@ export function Layout({ children }: { children: ReactNode }) {
           <span className="font-display text-xl font-bold tracking-wide">Gymbulag</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
-          {[...NAV, ...extra].map(({ to, label, icon: Icon, match }) => {
+          {NAV.map(({ to, label, icon: Icon, match }) => {
             const active = match(pathname);
             return (
               <NavLink
@@ -46,6 +48,27 @@ export function Layout({ children }: { children: ReactNode }) {
               </NavLink>
             );
           })}
+          {manage.length > 0 && (
+            <>
+              <div className="mb-1 mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-floor-mute/70">Manage</div>
+              {manage.map(({ to, label, icon: Icon, match }) => {
+                const active = match(pathname);
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 font-display text-sm font-semibold tracking-wide transition ${
+                      active ? 'bg-volt-500 text-volt-ink' : 'text-floor-mute hover:bg-white/5 hover:text-white'
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={active ? 2.4 : 2} />
+                    {label}
+                  </NavLink>
+                );
+              })}
+            </>
+          )}
         </nav>
       </aside>
 

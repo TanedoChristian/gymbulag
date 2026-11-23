@@ -11,7 +11,7 @@ import { config, databaseLabel } from './config.mjs';
 import { createPool } from './db.mjs';
 import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
-import { AuthError, changePassword, login, logout, register, requireUser, updateProfile } from './auth.mjs';
+import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateProfile } from './auth.mjs';
 import { routeCommunity } from './community.mjs';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
@@ -224,6 +224,7 @@ export function createHandler(pool) {
       }
       if (url.pathname === '/api/auth/logout' && req.method === 'POST') return send(res, 200, await logout(pool, auth));
       if (url.pathname === '/api/auth/profile' && req.method === 'POST') return send(res, 200, await updateProfile(pool, auth, await readJson(req)));
+      if (url.pathname === '/api/admin/session' && req.method === 'POST') return send(res, 200, await adminSessionFromApp(pool, auth, clientInfo(req)));
       if (url.pathname === '/api/auth/password' && req.method === 'POST') return send(res, 200, await changePassword(pool, auth, await readJson(req)));
 
       if (url.pathname === '/api/food/search' && req.method === 'GET') {

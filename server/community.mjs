@@ -3,10 +3,10 @@
 //   Gym owners:  see the communities they were given, track their members, block / unblock them.
 //   Everyone:    join a community by scanning its QR code (/join/<code>), see and leave their communities.
 import { randomBytes } from 'node:crypto';
-import { AuthError, isAdminRow } from './auth.mjs';
+import { AuthError } from './auth.mjs';
+import { routeAdmin } from './admin.mjs';
 import { dialect, isDuplicate } from './db.mjs';
 
-const ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'];
 const MEMBER_STATUSES = ['active', 'blocked'];
 const DAY = 24 * 3600 * 1000;
 
@@ -94,52 +94,6 @@ async function requireManager(pool, auth, communityId) {
 }
 
 /* --------------------------------------------------------------- admin */
-
-async function adminUsers(pool, q) {
-  const term = String(q ?? '').trim().toLowerCase().slice(0, 100);
-  const params = [];
-  let where = '';
-  if (term) {
-    params.push(`%${term}%`);
-    where = 'WHERE LOWER(u.email) LIKE $1 OR LOWER(u.name) LIKE $1';
-  }
-  const { rows } = await pool.query(
-    `SELECT u.id, u.email, u.name, u.role, u.status, u.created_at, u.status_changed_at,
-       (SELECT MAX(t.last_used_at) FROM auth_tokens t WHERE t.user_id = u.id) AS last_seen,
-       (SELECT COUNT(*) FROM community_members m WHERE m.user_id = u.id AND m.status = 'active') AS communities
-     FROM users u ${where} ORDER BY u.created_at DESC LIMIT 500`,
-    params,
-  );
-  const {
-    rows: totals,
-  } = await pool.query('SELECT status, COUNT(*) AS n FROM users GROUP BY status');
-  return {
-    users: rows.map((r) => ({
-      id: Number(r.id),
-      email: r.email,
-      name: r.name,
-      role: isAdminRow(r) ? 'admin' : r.role,
-      status: r.status,
-      createdAt: Number(r.created_at),
-      statusChangedAt: r.status_changed_at == null ? null : Number(r.status_changed_at),
-      lastSeen: r.last_seen == null ? null : Number(r.last_seen),
-      communities: Number(r.communities ?? 0),
-    })),
-    totals: Object.fromEntries(ACCOUNT_STATUSES.map((s) => [s, Number(totals.find((t) => t.status === s)?.n ?? 0)])),
-  };
-}
-
-async function adminSetUserStatus(pool, auth, body) {
-  const userId = checkId(body.userId, 'user');
-  const status = String(body.status ?? '');
-  if (!ACCOUNT_STATUSES.includes(status)) fail(400, 'Invalid status');
-  if (userId === auth.user.id) fail(400, "You can't change your own account's status");
-  const res = await pool.query('UPDATE users SET status = $1, status_changed_at = $2 WHERE id = $3', [status, Date.now(), userId]);
-  if (!res.rowCount) fail(404, 'User not found');
-  // Signed-in devices are logged out straight away.
-  if (status !== 'active') await pool.query('DELETE FROM auth_tokens WHERE user_id = $1', [userId]);
-  return { ok: true };
-}
 
 async function adminCommunities(pool) {
   const { rows } = await pool.query(`SELECT ${COMMUNITY_COLUMNS} FROM communities c ORDER BY c.created_at DESC`, [Date.now() - 7 * DAY]);
@@ -305,10 +259,10 @@ async function join(pool, auth, body) {
 
 async function myCommunities(pool, auth) {
   const { rows } = await pool.query(
-    "SELECT c.id, c.name, c.location, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
+    "SELECT c.id, c.name, c.location, c.active, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
     [auth.user.id],
   );
-  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, joinedAt: Number(r.joined_at) })) };
+  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, active: Number(r.active) === 1, joinedAt: Number(r.joined_at) })) };
 }
 
 async function leave(pool, auth, body) {
@@ -348,8 +302,8 @@ export async function routeCommunity(pool, auth, req, url, body) {
   // Admins
   if (!p.startsWith('/api/admin/')) return undefined;
   requireAdmin(auth);
-  if (p === '/api/admin/users' && get) return adminUsers(pool, url.searchParams.get('q'));
-  if (p === '/api/admin/users/status' && post) return adminSetUserStatus(pool, auth, await body());
+  const admin = await routeAdmin(pool, auth, req, url, body);
+  if (admin !== undefined) return admin;
   if (p === '/api/admin/communities' && get) return adminCommunities(pool);
   if (p === '/api/admin/communities' && post) return adminCreateCommunity(pool, auth, await body());
   if (p === '/api/admin/communities/update' && post) return adminUpdateCommunity(pool, await body());
