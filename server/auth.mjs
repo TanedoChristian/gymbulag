@@ -13,12 +13,9 @@ const KEYLEN = 64;
 /** A device that hasn't synced for this long has to log in again. */
 const TOKEN_IDLE_MS = 180 * 24 * 3600 * 1000;
 
-export class AuthError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
+import { AuthError } from './errors.mjs';
+
+export { AuthError };
 
 /* ------------------------------------------------------------ validation */
 

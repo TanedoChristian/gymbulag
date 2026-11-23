@@ -5,6 +5,7 @@ import { ArrowLeft, Globe, Loader2, Lock, MapPin, MessageSquare, PauseCircle, Se
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { UserAvatar } from '../components/UserAvatar';
 import { PostCard } from '../components/community/PostCard';
+import { CommunityCover } from '../components/community/CommunityCover';
 import { useToast } from '../context/Toast';
 import { useAuth } from '../lib/auth';
 import { createPost, getFeed, getPeople, POST_MAX, type CommunityInfo, type FeedAccess, type Person, type Post } from '../lib/feed';
@@ -173,18 +174,8 @@ function Feed({ communityId, onLoaded }: { communityId: number; onLoaded: (c: Co
   );
 }
 
-function Members({ communityId, onLoaded }: { communityId: number; onLoaded: (c: CommunityInfo) => void }) {
-  const [people, setPeople] = useState<Person[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+function Members({ people, error }: { people: Person[] | null; error: string | null }) {
   const [q, setQ] = useState('');
-  useEffect(() => {
-    getPeople(communityId)
-      .then((r) => {
-        setPeople(r.people);
-        onLoaded(r.community);
-      })
-      .catch((e) => setError((e as Error).message));
-  }, [communityId, onLoaded]);
   const shown = useMemo(() => {
     const t = q.trim().toLowerCase();
     return (people ?? []).filter((p) => !t || p.name.toLowerCase().includes(t));
@@ -222,56 +213,160 @@ function Members({ communityId, onLoaded }: { communityId: number; onLoaded: (c:
   );
 }
 
-/** One gym's community: a feed members post to, and who's in it. */
+/** Desktop sidebar: about the gym and a peek at who's in it. */
+function Sidebar({ info, people, onSeeAll }: { info: CommunityInfo | null; people: Person[] | null; onSeeAll: () => void }) {
+  const owners = people?.filter((p) => p.isOwner) ?? [];
+  const preview = (people ?? []).filter((p) => !p.isOwner).slice(0, 8);
+  return (
+    <aside className="hidden space-y-4 lg:block">
+      <section className="card p-4">
+        <h2 className="eyebrow mb-3">About</h2>
+        {info ? (
+          <dl className="space-y-2.5 text-sm">
+            {info.location && (
+              <div className="flex items-start gap-2.5">
+                <MapPin size={16} className="mt-0.5 shrink-0 text-steel-mute" />
+                <dd>{info.location}</dd>
+              </div>
+            )}
+            <div className="flex items-start gap-2.5">
+              {info.visibility === 'public' ? <Globe size={16} className="mt-0.5 shrink-0 text-steel-mute" /> : <Lock size={16} className="mt-0.5 shrink-0 text-steel-mute" />}
+              <dd>{info.visibility === 'public' ? 'Public: anyone can find and join it in Discover' : 'Private: join by scanning the gym’s QR code'}</dd>
+            </div>
+            <div className="flex items-start gap-2.5">
+              <Users size={16} className="mt-0.5 shrink-0 text-steel-mute" />
+              <dd>
+                {info.members} member{info.members === 1 ? '' : 's'}
+              </dd>
+            </div>
+            {!info.active && (
+              <div className="flex items-start gap-2.5 text-amber-700 dark:text-amber-300">
+                <PauseCircle size={16} className="mt-0.5 shrink-0" />
+                <dd>Paused: read-only for now</dd>
+              </div>
+            )}
+          </dl>
+        ) : (
+          <div className="h-20 animate-pulse rounded-md bg-steel/[0.06]" />
+        )}
+      </section>
+
+      {owners.length > 0 && (
+        <section className="card p-4">
+          <h2 className="eyebrow mb-3">Gym owner{owners.length > 1 ? 's' : ''}</h2>
+          <ul className="space-y-2.5">
+            {owners.map((p) => (
+              <li key={p.id} className="flex items-center gap-2.5">
+                <UserAvatar name={p.name} avatarKey={p.avatarKey} size="sm" />
+                <span className="truncate text-sm font-semibold">{p.name}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="card p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="eyebrow">Members</h2>
+          {people && people.length > 0 && (
+            <button className="text-xs font-semibold link-accent" onClick={onSeeAll}>
+              See all
+            </button>
+          )}
+        </div>
+        {!people ? (
+          <div className="h-16 animate-pulse rounded-md bg-steel/[0.06]" />
+        ) : preview.length === 0 ? (
+          <p className="text-sm text-steel-mute dark:text-floor-mute">No members yet.</p>
+        ) : (
+          <ul className="grid grid-cols-4 gap-x-2 gap-y-3">
+            {preview.map((p) => (
+              <li key={p.id} className="flex min-w-0 flex-col items-center gap-1 text-center" title={p.name}>
+                <UserAvatar name={p.name} avatarKey={p.avatarKey} size="md" />
+                <span className="w-full truncate text-[11px] text-steel-mute dark:text-floor-mute">{p.name.split(' ')[0]}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </aside>
+  );
+}
+
+/** One gym's community: a feed members post to, and who's in it. Two columns on desktop. */
 export default function CommunityDetailPage() {
   const { id } = useParams();
   const communityId = Number(id);
+  const valid = Number.isSafeInteger(communityId) && communityId > 0;
   const [params, setParams] = useSearchParams();
   const tab: Tab = params.get('tab') === 'members' ? 'members' : 'feed';
+  const setTab = (t: Tab) => setParams(t === 'feed' ? {} : { tab: t }, { replace: true });
   const [info, setInfo] = useState<CommunityInfo | null>(null);
+  const [people, setPeople] = useState<Person[] | null>(null);
+  const [peopleError, setPeopleError] = useState<string | null>(null);
   const onLoaded = useCallback((c: CommunityInfo) => setInfo(c), []);
+
+  // Members are loaded once for both the Members tab and the sidebar.
+  useEffect(() => {
+    if (!valid) return;
+    setPeople(null);
+    getPeople(communityId)
+      .then((r) => {
+        setPeople(r.people);
+        setInfo(r.community);
+      })
+      .catch((e) => setPeopleError((e as Error).message));
+  }, [communityId, valid]);
 
   return (
     <>
       <PageHeader
         title={info?.name ?? 'Community'}
-        subtitle={
-          info ? (
-            <span className="inline-flex items-center gap-2">
-              {info.location && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin size={11} /> {info.location}
-                </span>
-              )}
-              <span className="inline-flex items-center gap-1">
-                {info.visibility === 'public' ? <Globe size={11} /> : <Lock size={11} />}
-                {info.members} member{info.members === 1 ? '' : 's'}
-              </span>
-            </span>
-          ) : undefined
-        }
+        subtitle={info?.location || undefined}
         left={
           <Link to="/community" className="icon-btn -ml-2" aria-label="Back to my gyms">
             <ArrowLeft size={20} />
           </Link>
         }
       />
-      <div className="mx-auto max-w-app space-y-4 px-4 pt-4 lg:max-w-2xl lg:px-8">
-        <TabBar<Tab>
-          ariaLabel="Community sections"
-          value={tab}
-          onChange={(t) => setParams(t === 'feed' ? {} : { tab: t }, { replace: true })}
-          tabs={[
-            { value: 'feed', label: 'Feed', icon: <MessageSquare size={16} /> },
-            { value: 'members', label: info ? `Members (${info.members})` : 'Members', icon: <Users size={16} /> },
-          ]}
-        />
-        {Number.isSafeInteger(communityId) && communityId > 0 ? (
-          tab === 'feed' ? (
-            <Feed communityId={communityId} onLoaded={onLoaded} />
-          ) : (
-            <Members communityId={communityId} onLoaded={onLoaded} />
-          )
+      <div className="mx-auto max-w-app space-y-4 px-4 pt-4 lg:max-w-6xl lg:px-8">
+        <CommunityCover name={info?.name ?? ''} coverKey={info?.coverKey} className="aspect-[3/1] w-full rounded-xl shadow-rack lg:aspect-[4/1]">
+          {info && (
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent px-4 pb-3 pt-10 text-white lg:px-6 lg:pb-5">
+              <div className="font-display text-2xl font-bold leading-tight tracking-wide drop-shadow sm:text-3xl lg:text-4xl">{info.name}</div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-white/80 lg:text-sm">
+                {info.location && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={12} /> {info.location}
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1">
+                  <Users size={12} /> {info.members} member{info.members === 1 ? '' : 's'}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  {info.visibility === 'public' ? <Globe size={12} /> : <Lock size={12} />} {info.visibility === 'public' ? 'Public' : 'Private'}
+                </span>
+              </div>
+            </div>
+          )}
+        </CommunityCover>
+
+        {valid ? (
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="min-w-0 space-y-4">
+              <TabBar<Tab>
+                ariaLabel="Community sections"
+                value={tab}
+                onChange={setTab}
+                tabs={[
+                  { value: 'feed', label: 'Feed', icon: <MessageSquare size={16} /> },
+                  { value: 'members', label: info ? `Members (${info.members})` : 'Members', icon: <Users size={16} /> },
+                ]}
+              />
+              {tab === 'feed' ? <Feed communityId={communityId} onLoaded={onLoaded} /> : <Members people={people} error={peopleError} />}
+            </div>
+            <Sidebar info={info} people={people} onSeeAll={() => setTab('members')} />
+          </div>
         ) : (
           <EmptyState icon={<Lock size={24} />} title="Community not found" />
         )}

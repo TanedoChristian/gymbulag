@@ -22,6 +22,8 @@ export interface Community {
   /** Accepting new members by QR. */
   active: boolean;
   visibility: Visibility;
+  /** Cover photo id (see coverSrc); null = none. */
+  coverKey: string | null;
   createdAt: number;
   members: number;
   blocked: number;
@@ -52,6 +54,7 @@ export interface MyCommunity {
   /** False when an admin deactivated the community. */
   active: boolean;
   visibility: Visibility;
+  coverKey: string | null;
   joinedAt: number;
 }
 
@@ -77,6 +80,7 @@ export interface PublicCommunity {
   name: string;
   location: string;
   members: number;
+  coverKey: string | null;
   /** You're already a member. */
   joined: boolean;
 }
@@ -101,6 +105,8 @@ export const adminCommunities = () => adminApi<{ communities: Community[] }>('/a
 export const createCommunity = (name: string, location: string, visibility: Visibility) => adminApi<{ community: Community }>('/admin/communities', { name, location, visibility }).then((r) => r.community);
 export const updateCommunity = (id: number, patch: { name?: string; location?: string; active?: boolean; regenerateCode?: boolean; visibility?: Visibility }) =>
   adminApi<{ community: Community }>('/admin/communities/update', { id, ...patch }).then((r) => r.community);
+/** Set (data: URL) or remove (null) a community's cover photo. Admins only. */
+export const setCommunityCover = (id: number, image: string | null) => adminApi<{ community: Community }>('/admin/communities/cover', { id, image }).then((r) => r.community);
 export const deleteCommunity = (id: number) => adminApi('/admin/communities/delete', { id });
 export const addOwner = (communityId: number, email: string) => adminApi<{ community: Community }>('/admin/communities/owners/add', { communityId, email }).then((r) => r.community);
 export const removeOwner = (communityId: number, userId: number) => adminApi<{ community: Community }>('/admin/communities/owners/remove', { communityId, userId }).then((r) => r.community);

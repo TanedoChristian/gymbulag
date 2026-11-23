@@ -2,7 +2,7 @@
 // Pictures are resized on the device, stored in users.avatar and served from /api/avatars/<avatar_key>.
 // The key is random and replaced on every upload, so links can't be guessed and can be cached forever.
 import { randomBytes } from 'node:crypto';
-import { AuthError } from './auth.mjs';
+import { AuthError } from './errors.mjs';
 
 export const GENDERS = ['', 'male', 'female', 'other', 'prefer_not'];
 export const GOALS = ['', 'lose_fat', 'build_muscle', 'get_stronger', 'endurance', 'general_fitness'];

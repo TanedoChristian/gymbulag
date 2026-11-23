@@ -3,8 +3,9 @@
 //   Gym owners:  see the communities they were given, track their members, block / unblock them.
 //   Everyone:    join a community by scanning its QR code (/join/<code>), see and leave their communities.
 import { randomBytes } from 'node:crypto';
-import { AuthError } from './auth.mjs';
+import { AuthError } from './errors.mjs';
 import { routeAdmin } from './admin.mjs';
+import { sniff } from './profile.mjs';
 import { dialect, isDuplicate } from './db.mjs';
 
 const MEMBER_STATUSES = ['active', 'blocked'];
@@ -54,7 +55,10 @@ async function insertId(pool, sql, params) {
 
 /* -------------------------------------------------------------- shapes */
 
-const COMMUNITY_COLUMNS = `c.*,
+/** Every community column except the cover picture itself. */
+const BASE_COLUMNS = 'c.id, c.name, c.location, c.join_code, c.active, c.visibility, c.created_by, c.created_at, c.updated_at, c.cover_key';
+
+const COMMUNITY_COLUMNS = `${BASE_COLUMNS},
   (SELECT COUNT(*) FROM community_members m WHERE m.community_id = c.id AND m.status = 'active') AS members,
   (SELECT COUNT(*) FROM community_members m WHERE m.community_id = c.id AND m.status = 'blocked') AS blocked,
   (SELECT COUNT(*) FROM community_members m WHERE m.community_id = c.id AND m.status = 'active' AND m.joined_at >= $1) AS joined_week`;
@@ -67,6 +71,7 @@ function communityOut(row, owners = []) {
     joinCode: row.join_code,
     active: Number(row.active) === 1,
     visibility: row.visibility === 'public' ? 'public' : 'private',
+    coverKey: row.cover_key ?? null,
     createdAt: Number(row.created_at),
     members: Number(row.members ?? 0),
     blocked: Number(row.blocked ?? 0),
@@ -137,6 +142,49 @@ async function adminUpdateCommunity(pool, body) {
   await pool.query('UPDATE communities SET name = $1, location = $2, active = $3, join_code = $4, visibility = $5, updated_at = $6 WHERE id = $7', [name, location, active, joinCode, visibility, Date.now(), id]);
   const owners = await ownersByCommunity(pool);
   return { community: communityOut(await loadCommunity(pool, id), owners.get(id)) };
+}
+
+const MAX_COVER_BYTES = 1.5 * 1024 * 1024;
+
+/** Set (body.image: a data: URL) or remove (null) a community's cover photo. Admins only. */
+async function adminSetCover(pool, body) {
+  const id = checkId(body.id, 'community');
+  await loadCommunity(pool, id);
+  if (body.image == null || body.image === '') {
+    await pool.query('UPDATE communities SET cover = NULL, cover_type = NULL, cover_key = NULL, updated_at = $1 WHERE id = $2', [Date.now(), id]);
+  } else {
+    const m = String(body.image).match(/^data:image\/[a-z+]+;base64,([A-Za-z0-9+/=]+)$/);
+    if (!m) fail(400, 'Upload a JPEG, PNG or WebP picture');
+    const buf = Buffer.from(m[1], 'base64');
+    if (buf.length > MAX_COVER_BYTES) fail(400, 'That picture is too large (max 1.5 MB)');
+    const type = sniff(buf);
+    if (!type) fail(400, 'Upload a JPEG, PNG or WebP picture');
+    await pool.query('UPDATE communities SET cover = $1, cover_type = $2, cover_key = $3, updated_at = $4 WHERE id = $5', [buf, type, randomBytes(18).toString('base64url'), Date.now(), id]);
+  }
+  const owners = await ownersByCommunity(pool);
+  return { community: communityOut(await loadCommunity(pool, id), owners.get(id)) };
+}
+
+/** GET /api/community-covers/<key>. Public by unguessable key; cached for a year (a new upload gets a new key). */
+export async function serveCover(pool, key, res) {
+  const notFound = () => {
+    res.writeHead(404, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  };
+  if (!/^[A-Za-z0-9_-]{10,40}$/.test(key)) return notFound();
+  const {
+    rows: [row],
+  } = await pool.query('SELECT cover, cover_type FROM communities WHERE cover_key = $1', [key]);
+  if (!row?.cover) return notFound();
+  const buf = Buffer.isBuffer(row.cover) ? row.cover : Buffer.from(row.cover);
+  res.writeHead(200, {
+    'Content-Type': row.cover_type || 'image/jpeg',
+    'Content-Length': buf.length,
+    'Cache-Control': 'public, max-age=31536000, immutable',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Security-Policy': "default-src 'none'",
+  });
+  res.end(buf);
 }
 
 async function adminDeleteCommunity(pool, body) {
@@ -236,7 +284,7 @@ async function findByCode(pool, code) {
   if (!isCode(code)) fail(404, "This QR code isn't valid");
   const {
     rows: [row],
-  } = await pool.query('SELECT * FROM communities WHERE join_code = $1', [code]);
+  } = await pool.query(`SELECT ${BASE_COLUMNS} FROM communities c WHERE c.join_code = $1`, [code]);
   if (!row) fail(404, 'This QR code is no longer valid. Ask the gym for the current one.');
   return row;
 }
@@ -259,7 +307,7 @@ async function join(pool, auth, body) {
     // Joining from the Discover list: only public communities can be joined without the QR code.
     const {
       rows: [row],
-    } = await pool.query('SELECT * FROM communities WHERE id = $1', [checkId(body.id, 'community')]);
+    } = await pool.query(`SELECT ${BASE_COLUMNS} FROM communities c WHERE c.id = $1`, [checkId(body.id, 'community')]);
     if (!row || row.visibility !== 'public') fail(404, 'This gym can only be joined by scanning its QR code');
     c = row;
   } else c = await findByCode(pool, String(body.code ?? ''));
@@ -287,7 +335,7 @@ async function publicCommunities(pool, auth, q) {
     where += ' AND (LOWER(c.name) LIKE $2 OR LOWER(c.location) LIKE $2)';
   }
   const { rows } = await pool.query(
-    `SELECT c.id, c.name, c.location,
+    `SELECT c.id, c.name, c.location, c.cover_key,
        (SELECT COUNT(*) FROM community_members m WHERE m.community_id = c.id AND m.status = 'active') AS members,
        (SELECT m.status FROM community_members m WHERE m.community_id = c.id AND m.user_id = $1) AS membership
      FROM communities c WHERE ${where}
@@ -298,16 +346,16 @@ async function publicCommunities(pool, auth, q) {
     communities: rows
       // Blocked members don't see the gym that blocked them.
       .filter((r) => r.membership !== 'blocked')
-      .map((r) => ({ id: Number(r.id), name: r.name, location: r.location, members: Number(r.members ?? 0), joined: r.membership === 'active' })),
+      .map((r) => ({ id: Number(r.id), name: r.name, location: r.location, coverKey: r.cover_key ?? null, members: Number(r.members ?? 0), joined: r.membership === 'active' })),
   };
 }
 
 async function myCommunities(pool, auth) {
   const { rows } = await pool.query(
-    "SELECT c.id, c.name, c.location, c.active, c.visibility, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
+    "SELECT c.id, c.name, c.location, c.active, c.visibility, c.cover_key, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
     [auth.user.id],
   );
-  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, active: Number(r.active) === 1, visibility: r.visibility === 'public' ? 'public' : 'private', joinedAt: Number(r.joined_at) })) };
+  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, active: Number(r.active) === 1, visibility: r.visibility === 'public' ? 'public' : 'private', coverKey: r.cover_key ?? null, joinedAt: Number(r.joined_at) })) };
 }
 
 async function leave(pool, auth, body) {
@@ -353,6 +401,7 @@ export async function routeCommunity(pool, auth, req, url, body) {
   if (p === '/api/admin/communities' && get) return adminCommunities(pool);
   if (p === '/api/admin/communities' && post) return adminCreateCommunity(pool, auth, await body());
   if (p === '/api/admin/communities/update' && post) return adminUpdateCommunity(pool, await body());
+  if (p === '/api/admin/communities/cover' && post) return adminSetCover(pool, await body());
   if (p === '/api/admin/communities/delete' && post) return adminDeleteCommunity(pool, await body());
   if (p === '/api/admin/communities/owners/add' && post) return adminAddOwner(pool, await body());
   if (p === '/api/admin/communities/owners/remove' && post) return adminRemoveOwner(pool, await body());

@@ -5,6 +5,7 @@ import { Building2, ChevronRight, Compass, Loader2, LogOut, MapPin, QrCode, Shie
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { NearbyGyms } from '../components/community/NearbyGyms';
 import { DiscoverGyms } from '../components/community/DiscoverGyms';
+import { CommunityCover } from '../components/community/CommunityCover';
 import { useToast } from '../context/Toast';
 import { useConfirm } from '../context/Confirm';
 import { useAuth } from '../lib/auth';
@@ -80,9 +81,7 @@ function MyGyms({ onDiscover }: { onDiscover: () => void }) {
             {list.map((c) => (
               <li key={c.id} className="card card-hover flex items-center gap-3 p-3.5">
                 <Link to={`/community/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3" aria-label={`Open ${c.name} community`}>
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
-                  <Users size={19} />
-                </span>
+                <CommunityCover name={c.name} coverKey={c.coverKey} className="h-12 w-20 shrink-0 rounded-md" />
                 <div className="min-w-0 flex-1">
                   <h3 className="flex items-center gap-2 truncate font-bold leading-tight">
                     {c.name}

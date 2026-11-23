@@ -1,14 +1,15 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { CirclePause, CirclePlay, Globe, MessageSquare, Loader2, Lock, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
+import { CirclePause, CirclePlay, Globe, ImageIcon, MessageSquare, Loader2, Lock, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
 import { Modal } from '../../components/ui';
 import { Menu } from '../../components/Menu';
 import { QrModal } from '../../components/community/QrModal';
 import { MembersPanel } from '../../components/community/MembersPanel';
+import { CommunityCover, CoverPicker } from '../../components/community/CommunityCover';
 import { useToast } from '../../context/Toast';
 import { useConfirm } from '../../context/Confirm';
-import { addOwner, adminCommunities, createCommunity, deleteCommunity, removeOwner, updateCommunity, type Community, type Visibility } from '../../lib/community';
+import { addOwner, adminCommunities, createCommunity, deleteCommunity, removeOwner, setCommunityCover, updateCommunity, type Community, type Visibility } from '../../lib/community';
 import { Badge, EmptyRow, ErrorBlock, LoadingBlock, PageTitle, Pagination, Panel, SearchBox, SelectFilter, Table, Td, Th, THead, Toolbar, Tr, usePaged, useSort } from './kit';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
@@ -168,6 +169,7 @@ export default function Communities() {
   const [qrId, setQrId] = useState<number | null>(null);
   const [ownersId, setOwnersId] = useState<number | null>(null);
   const [membersId, setMembersId] = useState<number | null>(null);
+  const [coverId, setCoverId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -325,12 +327,27 @@ export default function Communities() {
               {page.rows.map((c) => (
                 <Tr key={c.id} onClick={() => setMembersId(c.id)} dim={!c.active}>
                   <Td>
-                    <div className="font-semibold">{c.name}</div>
-                    {c.location && (
-                      <div className="flex items-center gap-1 text-xs text-steel-mute dark:text-floor-mute">
-                        <MapPin size={11} /> {c.location}
+                    <div className="flex items-center gap-3">
+                      <button
+                        className="shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-volt-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setCoverId(c.id);
+                        }}
+                        aria-label={`Cover photo for ${c.name}`}
+                        title="Cover photo"
+                      >
+                        <CommunityCover name={c.name} coverKey={c.coverKey} className="h-10 w-[4.5rem] rounded-md" />
+                      </button>
+                      <div className="min-w-0">
+                        <div className="font-semibold">{c.name}</div>
+                        {c.location && (
+                          <div className="flex items-center gap-1 text-xs text-steel-mute dark:text-floor-mute">
+                            <MapPin size={11} /> {c.location}
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </Td>
                   <Td>
                     <Badge dot tone={c.active ? 'green' : 'amber'}>
@@ -378,6 +395,7 @@ export default function Communities() {
                           { label: 'Members', icon: <Users size={16} />, onSelect: () => setMembersId(c.id) },
                           { label: 'Gym owners', icon: <UserCog size={16} />, onSelect: () => setOwnersId(c.id) },
                           { label: 'Edit details', icon: <Pencil size={16} />, onSelect: () => setForm({ open: true, edit: c }) },
+                          { label: 'Cover photo', icon: <ImageIcon size={16} />, onSelect: () => setCoverId(c.id) },
                           c.visibility === 'public'
                             ? { label: 'Make private', icon: <Lock size={16} />, onSelect: () => setVisibility(c, 'private') }
                             : { label: 'Make public', icon: <Globe size={16} />, onSelect: () => setVisibility(c, 'public') },
@@ -414,6 +432,14 @@ export default function Communities() {
         }}
       />
       <OwnersModal community={ownersId ? byId.get(ownersId) ?? null : null} onClose={() => setOwnersId(null)} onSaved={put} />
+      {(() => {
+        const c = coverId ? byId.get(coverId) : null;
+        return (
+          <Modal open={!!c} onClose={() => setCoverId(null)} title={c ? `${c.name} · Cover photo` : ''} size="lg">
+            {c && <CoverPicker name={c.name} coverKey={c.coverKey} onSave={async (img) => put(await setCommunityCover(c.id, img))} />}
+          </Modal>
+        );
+      })()}
       <Modal
         open={!!membersOf}
         onClose={() => setMembersId(null)}

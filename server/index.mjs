@@ -13,7 +13,7 @@ import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
 import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateAvatar, updateProfile } from './auth.mjs';
 import { serveAvatar } from './profile.mjs';
-import { routeCommunity } from './community.mjs';
+import { routeCommunity, serveCover } from './community.mjs';
 import { routeFeed, serveMedia } from './feed.mjs';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
@@ -217,6 +217,8 @@ export function createHandler(pool) {
       if (avatar && req.method === 'GET') return await serveAvatar(pool, avatar[1], res);
       const media = url.pathname.match(/^\/api\/community-media\/([^/]+)$/);
       if (media && req.method === 'GET') return await serveMedia(pool, media[1], res);
+      const cover = url.pathname.match(/^\/api\/community-covers\/([^/]+)$/);
+      if (cover && req.method === 'GET') return await serveCover(pool, cover[1], res);
       if (url.pathname === '/api/auth/register' && req.method === 'POST') return send(res, 201, await register(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/auth/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/admin/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req), { adminOnly: true }));

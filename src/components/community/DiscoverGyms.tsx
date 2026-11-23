@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Globe, Loader2, MapPin, Search, Users } from 'lucide-react';
+import { Check, Globe, Loader2, MapPin, Search } from 'lucide-react';
 import { EmptyState } from '../ui';
+import { CommunityCover } from './CommunityCover';
 import { useToast } from '../../context/Toast';
 import { joinPublicCommunity, publicCommunities, type PublicCommunity } from '../../lib/community';
 
@@ -62,9 +63,7 @@ export function DiscoverGyms({ onJoined }: { onJoined?: () => void }) {
         <ul className="space-y-2">
           {list.map((c) => (
             <li key={c.id} className="card flex items-center gap-3 p-3.5">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
-                <Users size={19} />
-              </span>
+              <CommunityCover name={c.name} coverKey={c.coverKey} className="h-12 w-20 shrink-0 rounded-md" />
               <div className="min-w-0 flex-1">
                 <h3 className="truncate font-bold leading-tight">{c.name}</h3>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-steel-mute dark:text-floor-mute">

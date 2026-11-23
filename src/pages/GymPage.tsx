@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { QrModal } from '../components/community/QrModal';
 import { MembersPanel } from '../components/community/MembersPanel';
+import { CommunityCover } from '../components/community/CommunityCover';
 import { ownedCommunities, type Community } from '../lib/community';
 
 /** Gym owners: the communities an admin gave them access to, and who's in them. */
@@ -59,6 +60,7 @@ export default function GymPage() {
             {list.length > 1 && <TabBar ariaLabel="Your gyms" value={selected} onChange={setSelected} tabs={list.map((c) => ({ value: String(c.id), label: c.name }))} />}
             {current && (
               <>
+                <CommunityCover name={current.name} coverKey={current.coverKey} className="aspect-[3/1] w-full rounded-xl sm:aspect-[4/1]" />
                 {(current.location || !current.active || current.visibility) && (
                   <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                     {current.location && (

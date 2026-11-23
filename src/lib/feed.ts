@@ -48,6 +48,7 @@ export interface CommunityInfo {
   visibility: Visibility;
   active: boolean;
   members: number;
+  coverKey: string | null;
 }
 
 export interface FeedAccess {

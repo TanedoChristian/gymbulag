@@ -3,7 +3,7 @@
 // Who can moderate (delete anyone's post or comment, pin posts): gym owners and admins.
 // A deactivated community is read-only.
 import { randomBytes } from 'node:crypto';
-import { AuthError } from './auth.mjs';
+import { AuthError } from './errors.mjs';
 import { dialect } from './db.mjs';
 import { sniff } from './profile.mjs';
 
@@ -71,7 +71,7 @@ async function access(pool, auth, communityId) {
   const {
     rows: [c],
   } = await pool.query(
-    `SELECT c.id, c.name, c.location, c.visibility, c.active,
+    `SELECT c.id, c.name, c.location, c.visibility, c.active, c.cover_key,
        (SELECT m.status FROM community_members m WHERE m.community_id = c.id AND m.user_id = $2) AS membership,
        (SELECT COUNT(*) FROM community_owners o WHERE o.community_id = c.id AND o.user_id = $2) AS owner
      FROM communities c WHERE c.id = $1`,
@@ -85,7 +85,7 @@ async function access(pool, auth, communityId) {
   if (!isAdmin && !isOwner && !isMember) fail(403, 'Join this gym to see its community');
   const active = Number(c.active) === 1;
   return {
-    community: { id: Number(c.id), name: c.name, location: c.location, visibility: c.visibility === 'public' ? 'public' : 'private', active, members: await headcount(pool, communityId) },
+    community: { id: Number(c.id), name: c.name, location: c.location, visibility: c.visibility === 'public' ? 'public' : 'private', active, coverKey: c.cover_key ?? null, members: await headcount(pool, communityId) },
     me: { isMember, isOwner, isAdmin, canModerate: isAdmin || isOwner, canPost: active },
   };
 }
