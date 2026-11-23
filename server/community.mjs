@@ -8,6 +8,13 @@ import { routeAdmin } from './admin.mjs';
 import { dialect, isDuplicate } from './db.mjs';
 
 const MEMBER_STATUSES = ['active', 'blocked'];
+const VISIBILITIES = ['private', 'public'];
+
+function checkVisibility(v, fallback = 'private') {
+  if (v === undefined) return fallback;
+  if (!VISIBILITIES.includes(v)) fail(400, 'Visibility must be public or private');
+  return v;
+}
 const DAY = 24 * 3600 * 1000;
 
 const fail = (status, message) => {
@@ -59,6 +66,7 @@ function communityOut(row, owners = []) {
     location: row.location,
     joinCode: row.join_code,
     active: Number(row.active) === 1,
+    visibility: row.visibility === 'public' ? 'public' : 'private',
     createdAt: Number(row.created_at),
     members: Number(row.members ?? 0),
     blocked: Number(row.blocked ?? 0),
@@ -104,10 +112,12 @@ async function adminCommunities(pool) {
 async function adminCreateCommunity(pool, auth, body) {
   const name = checkText(body.name, 'name', 120, { required: true });
   const location = checkText(body.location, 'location', 255);
+  const visibility = checkVisibility(body.visibility);
   const now = Date.now();
-  const id = await insertId(pool, 'INSERT INTO communities (name, location, join_code, active, created_by, created_at, updated_at) VALUES ($1, $2, $3, 1, $4, $5, $6)', [
+  const id = await insertId(pool, 'INSERT INTO communities (name, location, visibility, join_code, active, created_by, created_at, updated_at) VALUES ($1, $2, $3, $4, 1, $5, $6, $7)', [
     name,
     location,
+    visibility,
     newJoinCode(),
     auth.user.id,
     now,
@@ -123,7 +133,8 @@ async function adminUpdateCommunity(pool, body) {
   const location = body.location === undefined ? cur.location : checkText(body.location, 'location', 255);
   const active = body.active === undefined ? Number(cur.active) : body.active ? 1 : 0;
   const joinCode = body.regenerateCode ? newJoinCode() : cur.join_code;
-  await pool.query('UPDATE communities SET name = $1, location = $2, active = $3, join_code = $4, updated_at = $5 WHERE id = $6', [name, location, active, joinCode, Date.now(), id]);
+  const visibility = checkVisibility(body.visibility, cur.visibility);
+  await pool.query('UPDATE communities SET name = $1, location = $2, active = $3, join_code = $4, visibility = $5, updated_at = $6 WHERE id = $7', [name, location, active, joinCode, visibility, Date.now(), id]);
   const owners = await ownersByCommunity(pool);
   return { community: communityOut(await loadCommunity(pool, id), owners.get(id)) };
 }
@@ -243,7 +254,15 @@ async function previewJoin(pool, auth, code) {
 }
 
 async function join(pool, auth, body) {
-  const c = await findByCode(pool, String(body.code ?? ''));
+  let c;
+  if (body.id !== undefined) {
+    // Joining from the Discover list: only public communities can be joined without the QR code.
+    const {
+      rows: [row],
+    } = await pool.query('SELECT * FROM communities WHERE id = $1', [checkId(body.id, 'community')]);
+    if (!row || row.visibility !== 'public') fail(404, 'This gym can only be joined by scanning its QR code');
+    c = row;
+  } else c = await findByCode(pool, String(body.code ?? ''));
   const community = { id: Number(c.id), name: c.name, location: c.location };
   const status = await membership(pool, c.id, auth.user.id);
   if (status === 'blocked') fail(403, `You can't join ${c.name}. Talk to the gym if you think this is a mistake.`);
@@ -258,12 +277,37 @@ async function join(pool, auth, body) {
   return { community, alreadyMember: false };
 }
 
+/** Public, active communities for the Discover tab, with whether you're already in each. */
+async function publicCommunities(pool, auth, q) {
+  const term = String(q ?? '').trim().toLowerCase().slice(0, 100);
+  const params = [auth.user.id];
+  let where = "c.visibility = 'public' AND c.active = 1";
+  if (term) {
+    params.push(`%${term}%`);
+    where += ' AND (LOWER(c.name) LIKE $2 OR LOWER(c.location) LIKE $2)';
+  }
+  const { rows } = await pool.query(
+    `SELECT c.id, c.name, c.location,
+       (SELECT COUNT(*) FROM community_members m WHERE m.community_id = c.id AND m.status = 'active') AS members,
+       (SELECT m.status FROM community_members m WHERE m.community_id = c.id AND m.user_id = $1) AS membership
+     FROM communities c WHERE ${where}
+     ORDER BY members DESC, c.name LIMIT 200`,
+    params,
+  );
+  return {
+    communities: rows
+      // Blocked members don't see the gym that blocked them.
+      .filter((r) => r.membership !== 'blocked')
+      .map((r) => ({ id: Number(r.id), name: r.name, location: r.location, members: Number(r.members ?? 0), joined: r.membership === 'active' })),
+  };
+}
+
 async function myCommunities(pool, auth) {
   const { rows } = await pool.query(
-    "SELECT c.id, c.name, c.location, c.active, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
+    "SELECT c.id, c.name, c.location, c.active, c.visibility, m.joined_at FROM community_members m JOIN communities c ON c.id = m.community_id WHERE m.user_id = $1 AND m.status = 'active' ORDER BY m.joined_at DESC",
     [auth.user.id],
   );
-  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, active: Number(r.active) === 1, joinedAt: Number(r.joined_at) })) };
+  return { communities: rows.map((r) => ({ id: Number(r.id), name: r.name, location: r.location, active: Number(r.active) === 1, visibility: r.visibility === 'public' ? 'public' : 'private', joinedAt: Number(r.joined_at) })) };
 }
 
 async function leave(pool, auth, body) {
@@ -286,6 +330,7 @@ export async function routeCommunity(pool, auth, req, url, body) {
 
   // Everyone
   if (p === '/api/communities/mine' && get) return myCommunities(pool, auth);
+  if (p === '/api/communities/public' && get) return publicCommunities(pool, auth, url.searchParams.get('q'));
   if (p === '/api/communities/leave' && post) return leave(pool, auth, await body());
   if (p === '/api/communities/join' && post) return join(pool, auth, await body());
   const preview = p.match(/^\/api\/communities\/join\/([^/]+)$/);

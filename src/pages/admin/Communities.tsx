@@ -1,27 +1,30 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { format } from 'date-fns';
-import { CirclePause, CirclePlay, Loader2, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
+import { CirclePause, CirclePlay, Globe, Loader2, Lock, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
 import { Modal } from '../../components/ui';
 import { Menu } from '../../components/Menu';
 import { QrModal } from '../../components/community/QrModal';
 import { MembersPanel } from '../../components/community/MembersPanel';
 import { useToast } from '../../context/Toast';
 import { useConfirm } from '../../context/Confirm';
-import { addOwner, adminCommunities, createCommunity, deleteCommunity, removeOwner, updateCommunity, type Community } from '../../lib/community';
+import { addOwner, adminCommunities, createCommunity, deleteCommunity, removeOwner, updateCommunity, type Community, type Visibility } from '../../lib/community';
 import { Badge, EmptyRow, ErrorBlock, LoadingBlock, PageTitle, Pagination, Panel, SearchBox, SelectFilter, Table, Td, Th, THead, Toolbar, Tr, usePaged, useSort } from './kit';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
+type VisibilityFilter = 'all' | Visibility;
 type SortKey = 'name' | 'members' | 'joinedThisWeek' | 'blocked' | 'createdAt';
 
 function CommunityForm({ open, onClose, initial, onSaved }: { open: boolean; onClose: () => void; initial?: Community | null; onSaved: (c: Community, created: boolean) => void }) {
   const toast = useToast();
   const [name, setName] = useState('');
   const [location, setLocation] = useState('');
+  const [visibility, setVisibility] = useState<Visibility>('private');
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (open) {
       setName(initial?.name ?? '');
       setLocation(initial?.location ?? '');
+      setVisibility(initial?.visibility ?? 'private');
     }
   }, [open, initial]);
 
@@ -29,7 +32,7 @@ function CommunityForm({ open, onClose, initial, onSaved }: { open: boolean; onC
     e.preventDefault();
     setBusy(true);
     try {
-      const c = initial ? await updateCommunity(initial.id, { name, location }) : await createCommunity(name, location);
+      const c = initial ? await updateCommunity(initial.id, { name, location, visibility }) : await createCommunity(name, location, visibility);
       onSaved(c, !initial);
       onClose();
       toast(initial ? 'Community updated' : 'Community created', { tone: 'success' });
@@ -51,6 +54,32 @@ function CommunityForm({ open, onClose, initial, onSaved }: { open: boolean; onC
           <span className="label">Location (optional)</span>
           <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} maxLength={255} placeholder="Address or branch" />
         </label>
+        <fieldset>
+          <legend className="label">Visibility</legend>
+          <div className="grid gap-2">
+            {(
+              [
+                { value: 'private', icon: <Lock size={16} />, title: 'Private', desc: 'Only people who scan the QR code can join.' },
+                { value: 'public', icon: <Globe size={16} />, title: 'Public', desc: 'Listed in the app under Community → Discover. Anyone can find and join it.' },
+              ] as const
+            ).map((o) => (
+              <label
+                key={o.value}
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                  visibility === o.value ? 'border-volt-600 bg-volt-500/10 dark:border-volt-500' : 'border-steel/15 hover:border-steel/30 dark:border-white/10'
+                }`}
+              >
+                <input type="radio" name="visibility" className="mt-1 accent-[#a8cc00]" checked={visibility === o.value} onChange={() => setVisibility(o.value)} />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-sm font-semibold">
+                    {o.icon} {o.title}
+                  </span>
+                  <span className="block text-xs text-steel-mute dark:text-floor-mute">{o.desc}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
         <button className="btn-primary w-full" disabled={busy || !name.trim()}>
           {busy && <Loader2 size={16} className="animate-spin" />}
           {initial ? 'Save' : 'Create and get QR code'}
@@ -132,6 +161,7 @@ export default function Communities() {
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
+  const [vis, setVis] = useState<VisibilityFilter>('all');
   const [form, setForm] = useState<{ open: boolean; edit: Community | null }>({ open: false, edit: null });
   const [qrId, setQrId] = useState<number | null>(null);
   const [ownersId, setOwnersId] = useState<number | null>(null);
@@ -153,11 +183,12 @@ export default function Communities() {
     return (list ?? []).filter(
       (c) =>
         (status === 'all' || (status === 'active') === c.active) &&
+        (vis === 'all' || c.visibility === vis) &&
         (!term || c.name.toLowerCase().includes(term) || c.location.toLowerCase().includes(term) || c.owners.some((o) => o.email.toLowerCase().includes(term) || o.name.toLowerCase().includes(term))),
     );
-  }, [list, q, status]);
+  }, [list, q, status, vis]);
   const { sorted, sort, toggle } = useSort<Community, SortKey>(filtered, { key: 'createdAt', dir: 'desc' }, (c, k) => (k === 'name' ? c.name.toLowerCase() : c[k]));
-  const page = usePaged(sorted, 15, `${q}|${status}`);
+  const page = usePaged(sorted, 15, `${q}|${status}|${vis}`);
 
   const setActive = async (c: Community, active: boolean) => {
     if (!active) {
@@ -172,6 +203,19 @@ export default function Communities() {
     try {
       put(await updateCommunity(c.id, { active }));
       toast(active ? 'Community activated' : 'Community deactivated', { tone: 'success' });
+    } catch (e) {
+      toast((e as Error).message, { tone: 'error' });
+    }
+  };
+
+  const setVisibility = async (c: Community, visibility: Visibility) => {
+    if (visibility === 'public') {
+      const ok = await confirm({ title: `Make ${c.name} public?`, message: 'It will be listed in the app under Community → Discover, and anyone can join it without the QR code.', confirmLabel: 'Make public' });
+      if (!ok) return;
+    }
+    try {
+      put(await updateCommunity(c.id, { visibility }));
+      toast(visibility === 'public' ? 'Community is now public' : 'Community is now private', { tone: 'success' });
     } catch (e) {
       toast((e as Error).message, { tone: 'error' });
     }
@@ -216,6 +260,16 @@ export default function Communities() {
         <Panel flush>
           <Toolbar>
             <SearchBox value={q} onChange={setQ} placeholder="Search gym, location or owner" />
+            <SelectFilter<VisibilityFilter>
+              label="Visibility"
+              value={vis}
+              onChange={setVis}
+              options={[
+                { value: 'all', label: 'Public and private' },
+                { value: 'public', label: 'Public' },
+                { value: 'private', label: 'Private' },
+              ]}
+            />
             <SelectFilter<StatusFilter>
               label="Status"
               value={status}
@@ -227,12 +281,13 @@ export default function Communities() {
               ]}
             />
           </Toolbar>
-          <Table minWidth={920}>
+          <Table minWidth={980}>
             <THead>
               <Th sortKey="name" sort={sort} onSort={toggle}>
                 Community
               </Th>
               <Th>Status</Th>
+              <Th>Visibility</Th>
               <Th sortKey="members" sort={sort} onSort={toggle} className="text-right">
                 Members
               </Th>
@@ -252,7 +307,7 @@ export default function Communities() {
             </THead>
             <tbody>
               {page.rows.length === 0 && (
-                <EmptyRow cols={8}>
+                <EmptyRow cols={9}>
                   {list.length ? (
                     'No communities match these filters.'
                   ) : (
@@ -279,6 +334,12 @@ export default function Communities() {
                     <Badge dot tone={c.active ? 'green' : 'amber'}>
                       {c.active ? 'Active' : 'Deactivated'}
                     </Badge>
+                  </Td>
+                  <Td>
+                    <span className="inline-flex items-center gap-1.5 text-sm" title={c.visibility === 'public' ? 'Listed in Community → Discover' : 'Join by QR code only'}>
+                      {c.visibility === 'public' ? <Globe size={14} className="text-sky-600 dark:text-sky-400" /> : <Lock size={14} className="text-steel-mute" />}
+                      {c.visibility === 'public' ? 'Public' : 'Private'}
+                    </span>
                   </Td>
                   <Td className="text-right font-mono tabular">{c.members}</Td>
                   <Td className="text-right font-mono tabular">{c.joinedThisWeek || <span className="text-steel-mute">—</span>}</Td>
@@ -314,6 +375,9 @@ export default function Communities() {
                           { label: 'Members', icon: <Users size={16} />, onSelect: () => setMembersId(c.id) },
                           { label: 'Gym owners', icon: <UserCog size={16} />, onSelect: () => setOwnersId(c.id) },
                           { label: 'Edit details', icon: <Pencil size={16} />, onSelect: () => setForm({ open: true, edit: c }) },
+                          c.visibility === 'public'
+                            ? { label: 'Make private', icon: <Lock size={16} />, onSelect: () => setVisibility(c, 'private') }
+                            : { label: 'Make public', icon: <Globe size={16} />, onSelect: () => setVisibility(c, 'public') },
                           c.active
                             ? { label: 'Deactivate', icon: <CirclePause size={16} />, onSelect: () => setActive(c, false) }
                             : { label: 'Activate', icon: <CirclePlay size={16} />, onSelect: () => setActive(c, true) },

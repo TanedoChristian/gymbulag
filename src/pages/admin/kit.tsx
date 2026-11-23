@@ -83,10 +83,11 @@ export function useSort<T, K extends string>(rows: T[], initial: Sort<K>, get: (
   return { sorted, sort, toggle };
 }
 
+/** On phones and small laptops the table keeps minWidth and scrolls sideways; from xl up it sizes to its content. */
 export function Table({ children, minWidth = 720 }: { children: ReactNode; minWidth?: number }) {
   return (
     <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left text-sm" style={{ minWidth }}>
+      <table className="w-full border-collapse text-left text-sm xl:!min-w-0" style={{ minWidth }}>
         {children}
       </table>
     </div>

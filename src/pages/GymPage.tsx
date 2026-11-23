@@ -53,13 +53,16 @@ export default function GymPage() {
             {list.length > 1 && <TabBar ariaLabel="Your gyms" value={selected} onChange={setSelected} tabs={list.map((c) => ({ value: String(c.id), label: c.name }))} />}
             {current && (
               <>
-                {(current.location || !current.active) && (
+                {(current.location || !current.active || current.visibility) && (
                   <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                     {current.location && (
                       <span className="flex items-center gap-1">
                         <MapPin size={12} /> {current.location}
                       </span>
                     )}
+                    <span className="rounded bg-steel/[0.07] px-2 py-0.5 font-semibold dark:bg-white/[0.06]">
+                      {current.visibility === 'public' ? 'Public · listed in Discover' : 'Private · join by QR code'}
+                    </span>
                     {!current.active && <span className="rounded bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-700 dark:text-amber-300">Deactivated: new members can't join</span>}
                   </div>
                 )}

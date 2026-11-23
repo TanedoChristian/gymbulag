@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Building2, ChevronRight, Loader2, LogOut, MapPin, QrCode, ShieldCheck, Users } from 'lucide-react';
+import { Building2, ChevronRight, Compass, Loader2, LogOut, MapPin, QrCode, ShieldCheck, Users } from 'lucide-react';
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { NearbyGyms } from '../components/community/NearbyGyms';
+import { DiscoverGyms } from '../components/community/DiscoverGyms';
 import { useToast } from '../context/Toast';
 import { useConfirm } from '../context/Confirm';
 import { useAuth } from '../lib/auth';
 import { leaveCommunity, myCommunities, type MyCommunity } from '../lib/community';
 
-type Tab = 'mine' | 'nearby';
+type Tab = 'mine' | 'discover' | 'nearby';
 
 /** The gym communities you joined (plus admin panel / gym-owner dashboard shortcuts). */
-function MyGyms() {
+function MyGyms({ onDiscover }: { onDiscover: () => void }) {
   const toast = useToast();
   const confirm = useConfirm();
   const user = useAuth()?.user;
@@ -67,7 +68,10 @@ function MyGyms() {
         </div>
       ) : list.length === 0 ? (
         <EmptyState icon={<QrCode size={24} />} title="You haven't joined a gym yet">
-          Scan the QR code at your gym's front desk with your phone camera to join its community.
+          <p>Scan the QR code at your gym's front desk with your phone camera to join its community.</p>
+          <button className="btn-secondary mt-4" onClick={onDiscover}>
+            <Compass size={16} /> Browse public gyms
+          </button>
         </EmptyState>
       ) : (
         <section aria-label="Your gyms">
@@ -105,21 +109,24 @@ function MyGyms() {
 
 export default function CommunityPage() {
   const [params, setParams] = useSearchParams();
-  const tab: Tab = params.get('tab') === 'nearby' ? 'nearby' : 'mine';
+  const t = params.get('tab');
+  const tab: Tab = t === 'nearby' || t === 'discover' ? t : 'mine';
+  const go = (next: Tab) => setParams(next === 'mine' ? {} : { tab: next }, { replace: true });
   return (
     <>
-      <PageHeader title="Community" subtitle={tab === 'nearby' ? 'Gyms around you' : 'Your gyms'} />
+      <PageHeader title="Community" subtitle={tab === 'nearby' ? 'Gyms around you' : tab === 'discover' ? 'Public gyms you can join' : 'Your gyms'} />
       <div className="mx-auto max-w-app space-y-4 px-4 pt-4 lg:max-w-app-wide lg:px-8">
         <TabBar<Tab>
           ariaLabel="Community sections"
           value={tab}
-          onChange={(t) => setParams(t === 'mine' ? {} : { tab: t }, { replace: true })}
+          onChange={go}
           tabs={[
             { value: 'mine', label: 'My gyms', icon: <Users size={16} /> },
+            { value: 'discover', label: 'Discover', icon: <Compass size={16} /> },
             { value: 'nearby', label: 'Nearby', icon: <MapPin size={16} /> },
           ]}
         />
-        {tab === 'mine' ? <MyGyms /> : <NearbyGyms />}
+        {tab === 'mine' ? <MyGyms onDiscover={() => go('discover')} /> : tab === 'discover' ? <DiscoverGyms /> : <NearbyGyms />}
       </div>
     </>
   );

@@ -5,6 +5,8 @@ import { adminApi } from './adminAuth';
 
 export type AccountStatus = 'active' | 'inactive' | 'blocked';
 export type MemberStatus = 'active' | 'blocked';
+/** private: join only with the QR code. public: also listed in Community -> Discover. */
+export type Visibility = 'private' | 'public';
 
 export interface CommunityOwner {
   id: number;
@@ -19,6 +21,7 @@ export interface Community {
   joinCode: string;
   /** Accepting new members by QR. */
   active: boolean;
+  visibility: Visibility;
   createdAt: number;
   members: number;
   blocked: number;
@@ -48,6 +51,7 @@ export interface MyCommunity {
   location: string;
   /** False when an admin deactivated the community. */
   active: boolean;
+  visibility: Visibility;
   joinedAt: number;
 }
 
@@ -68,6 +72,17 @@ export function qrDataUrl(text: string, width = 640): Promise<string> {
 export const previewJoin = (code: string) =>
   api<{ community: { id: number; name: string; location: string; active: boolean }; membership: MemberStatus | null }>(`/communities/join/${encodeURIComponent(code)}`);
 export const joinCommunity = (code: string) => api<{ community: { id: number; name: string; location: string }; alreadyMember: boolean }>('/communities/join', { code });
+export interface PublicCommunity {
+  id: number;
+  name: string;
+  location: string;
+  members: number;
+  /** You're already a member. */
+  joined: boolean;
+}
+export const publicCommunities = (q = '') => api<{ communities: PublicCommunity[] }>(`/communities/public?q=${encodeURIComponent(q)}`).then((r) => r.communities);
+/** Join a public community from the Discover list. */
+export const joinPublicCommunity = (id: number) => api<{ community: { id: number; name: string; location: string }; alreadyMember: boolean }>('/communities/join', { id });
 export const myCommunities = () => api<{ communities: MyCommunity[] }>('/communities/mine').then((r) => r.communities);
 export const leaveCommunity = (id: number) => api('/communities/leave', { id });
 
@@ -83,8 +98,8 @@ export const setMemberStatus = (communityId: number, userId: number, status: Mem
 /* -------------------------------------------------------------------- admin */
 
 export const adminCommunities = () => adminApi<{ communities: Community[] }>('/admin/communities').then((r) => r.communities);
-export const createCommunity = (name: string, location: string) => adminApi<{ community: Community }>('/admin/communities', { name, location }).then((r) => r.community);
-export const updateCommunity = (id: number, patch: { name?: string; location?: string; active?: boolean; regenerateCode?: boolean }) =>
+export const createCommunity = (name: string, location: string, visibility: Visibility) => adminApi<{ community: Community }>('/admin/communities', { name, location, visibility }).then((r) => r.community);
+export const updateCommunity = (id: number, patch: { name?: string; location?: string; active?: boolean; regenerateCode?: boolean; visibility?: Visibility }) =>
   adminApi<{ community: Community }>('/admin/communities/update', { id, ...patch }).then((r) => r.community);
 export const deleteCommunity = (id: number) => adminApi('/admin/communities/delete', { id });
 export const addOwner = (communityId: number, email: string) => adminApi<{ community: Community }>('/admin/communities/owners/add', { communityId, email }).then((r) => r.community);
