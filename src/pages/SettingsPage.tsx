@@ -469,61 +469,65 @@ export default function SettingsPage() {
         </Group>
 
 
-        <Group title="Your data">
-          <div className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
-            Everything is kept on this device and synced to your account ({counts?.sessions ?? '…'} sessions, {counts?.templates ?? '…'} templates, {counts?.activities ?? '…'} walks/runs, {counts?.foodlog ?? '…'} food entries, {counts?.weights ?? '…'} weigh-ins, {counts?.photos ?? '…'} photos). Download a backup regularly, or to move to another phone. Backups include your photos.
-          </div>
-          <Row title="Download backup" desc="Full JSON backup you can restore later.">
-            <button className="btn-secondary !py-2" onClick={exportJSON}>
-              <Download size={15} /> Backup
-            </button>
-          </Row>
-          <Row title="Restore from backup" desc="Merge with or replace current data.">
-            <button className="btn-secondary !py-2" onClick={() => fileInput.current?.click()}>
-              <Upload size={15} /> Restore
-            </button>
-            <input ref={fileInput} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
-          </Row>
-          <Row title="Export as CSV" desc="Every set, for spreadsheets.">
-            <button className="btn-secondary !py-2" onClick={exportCSV}>
-              <FileSpreadsheet size={15} /> CSV
-            </button>
-          </Row>
-          {persisted === false && (
-            <Row title="Protect storage" desc="Ask the browser not to clear your data when space runs low.">
-              <button className="btn-secondary !py-2" onClick={requestPersist}>
-                <HardDrive size={15} /> Protect
+        {__SHOW_USER_DATA__ && (
+          <Group title="Your data">
+            <div className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
+              Everything is kept on this device and synced to your account ({counts?.sessions ?? '…'} sessions, {counts?.templates ?? '…'} templates, {counts?.activities ?? '…'} walks/runs, {counts?.foodlog ?? '…'} food entries, {counts?.weights ?? '…'} weigh-ins, {counts?.photos ?? '…'} photos). Download a backup regularly, or to move to another phone. Backups include your photos.
+            </div>
+            <Row title="Download backup" desc="Full JSON backup you can restore later.">
+              <button className="btn-secondary !py-2" onClick={exportJSON}>
+                <Download size={15} /> Backup
               </button>
             </Row>
-          )}
-          <Row title="Delete all data" desc="From this device and your account. Cannot be undone.">
-            <button className="btn-ghost !py-2 text-red-600 dark:text-red-400" onClick={wipe}>
-              <Trash2 size={15} /> Delete
-            </button>
-          </Row>
-        </Group>
+            <Row title="Restore from backup" desc="Merge with or replace current data.">
+              <button className="btn-secondary !py-2" onClick={() => fileInput.current?.click()}>
+                <Upload size={15} /> Restore
+              </button>
+              <input ref={fileInput} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { void onFile(e.target.files?.[0]); e.target.value = ''; }} />
+            </Row>
+            <Row title="Export as CSV" desc="Every set, for spreadsheets.">
+              <button className="btn-secondary !py-2" onClick={exportCSV}>
+                <FileSpreadsheet size={15} /> CSV
+              </button>
+            </Row>
+            {persisted === false && (
+              <Row title="Protect storage" desc="Ask the browser not to clear your data when space runs low.">
+                <button className="btn-secondary !py-2" onClick={requestPersist}>
+                  <HardDrive size={15} /> Protect
+                </button>
+              </Row>
+            )}
+            <Row title="Delete all data" desc="From this device and your account. Cannot be undone.">
+              <button className="btn-ghost !py-2 text-red-600 dark:text-red-400" onClick={wipe}>
+                <Trash2 size={15} /> Delete
+              </button>
+            </Row>
+          </Group>
+        )}
 
         <p className="pb-4 text-center text-xs text-zinc-400">Gymbulag v{__APP_VERSION__} · Works offline</p>
       </div>
 
-      <Modal open={!!pending} onClose={() => setPending(null)} title="Restore backup" size="sm">
-        {pending && (
-          <>
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Backup from <b>{new Date(pending.exportedAt).toLocaleString()}</b> with <b>{pending.sessions.length}</b> sessions, <b>{pending.templates.length}</b> templates, <b>{pending.activities.length}</b> walks/runs, <b>{pending.foodlog.length}</b> food entries, <b>{pending.weights.length}</b> weigh-ins and <b>{pending.photos.length}</b> photos.
-            </p>
-            <div className="mt-5 space-y-2">
-              <button className="btn-primary w-full" onClick={() => doImport('merge')}>
-                Merge with current data
-              </button>
-              <button className="btn-secondary w-full !text-red-600 dark:!text-red-400" onClick={() => doImport('replace')}>
-                Replace everything
-              </button>
-            </div>
-            <p className="mt-3 text-xs text-zinc-500">Merge keeps the most recently edited version of each session.</p>
-          </>
-        )}
-      </Modal>
+      {__SHOW_USER_DATA__ && (
+        <Modal open={!!pending} onClose={() => setPending(null)} title="Restore backup" size="sm">
+          {pending && (
+            <>
+              <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                Backup from <b>{new Date(pending.exportedAt).toLocaleString()}</b> with <b>{pending.sessions.length}</b> sessions, <b>{pending.templates.length}</b> templates, <b>{pending.activities.length}</b> walks/runs, <b>{pending.foodlog.length}</b> food entries, <b>{pending.weights.length}</b> weigh-ins and <b>{pending.photos.length}</b> photos.
+              </p>
+              <div className="mt-5 space-y-2">
+                <button className="btn-primary w-full" onClick={() => doImport('merge')}>
+                  Merge with current data
+                </button>
+                <button className="btn-secondary w-full !text-red-600 dark:!text-red-400" onClick={() => doImport('replace')}>
+                  Replace everything
+                </button>
+              </div>
+              <p className="mt-3 text-xs text-zinc-500">Merge keeps the most recently edited version of each session.</p>
+            </>
+          )}
+        </Modal>
+      )}
     </>
   );
 }

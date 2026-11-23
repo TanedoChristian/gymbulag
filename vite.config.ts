@@ -48,10 +48,13 @@ function gymbulagApi(): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const apiPort = loadEnv(mode, process.cwd(), '').PORT || '8787';
+  const env = loadEnv(mode, process.cwd(), '');
+  const apiPort = env.PORT || '8787';
   return {
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),
+      // Settings → "Your data" (backup / restore / wipe). Only shown when SHOW_USER_DATA=true.
+      __SHOW_USER_DATA__: JSON.stringify(env.SHOW_USER_DATA === 'true'),
     },
     plugins: [
       gymbulagApi(),
