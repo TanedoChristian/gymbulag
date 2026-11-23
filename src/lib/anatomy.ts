@@ -140,8 +140,8 @@ export const MUSCLE_PART_META: Record<MusclePart, MusclePartMeta> = {
     view: 'back',
     functionCue: 'Extends the lumbar spine and resists spinal rounding during hinges and pulls.',
     idle: '#a5b4fc',
-    hot: '#6366f1',
-    warm: '#818cf8',
+    hot: '#ff4d1a',
+    warm: '#c6f000',
   },
   biceps: {
     id: 'biceps',

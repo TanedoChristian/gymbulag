@@ -35,7 +35,7 @@ export default function LibraryPage() {
           />
         }
       />
-      <div className="mx-auto max-w-3xl px-4 pt-4">{tab === 'exercises' ? <ExercisesTab /> : <TemplatesTab />}</div>
+      <div className="mx-auto max-w-app lg:max-w-app-wide px-4 pt-4">{tab === 'exercises' ? <ExercisesTab /> : <TemplatesTab />}</div>
     </>
   );
 }
@@ -280,7 +280,7 @@ function TemplatesTab() {
             return (
               <li key={t.id} className="card overflow-hidden">
                 <button className="flex w-full items-start gap-3 p-4 pb-3 text-left" onClick={() => setEditing({ template: t, isNew: false })}>
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
                     <ClipboardList size={19} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -353,7 +353,7 @@ function TemplatesTab() {
           {templates.map((t) => (
             <li key={t.id}>
               <button className="card card-hover flex w-full items-center gap-3 p-3.5 text-left" onClick={() => startNew(t)}>
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-300">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-volt-500/15 link-accent">
                   <Copy size={17} />
                 </span>
                 <span className="min-w-0 flex-1">

@@ -12,6 +12,7 @@ import { createPool } from './db.mjs';
 import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
 import { AuthError, changePassword, login, logout, register, requireUser, updateProfile } from './auth.mjs';
+import { routeCommunity } from './community.mjs';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const MAX_BODY = 64 * 1024 * 1024;
@@ -111,6 +112,86 @@ async function searchOpenFoodFacts(q) {
   return (data.hits ?? []).filter((h) => h?.nutriments && (h.nutriments['energy-kcal_100g'] != null || h.nutriments['energy-kj_100g'] != null));
 }
 
+
+// Nearby gyms via OpenStreetMap Overpass (no API key). Browser calls us to avoid CORS + keep the query private.
+const OVERPASS = 'https://overpass-api.de/api/interpreter';
+const GYM_RADIUS_MAX_M = 20_000;
+
+function haversineKm(aLat, aLon, bLat, bLon) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371;
+  const dLat = toRad(bLat - aLat);
+  const dLon = toRad(bLon - aLon);
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function gymAddress(tags = {}) {
+  const line = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ').trim();
+  const city = [tags['addr:city'], tags['addr:suburb']].filter(Boolean)[0];
+  return [line || tags['addr:full'], city].filter(Boolean).join(', ') || null;
+}
+
+async function searchNearbyGyms(lat, lon, radiusM) {
+  const latN = Number(lat);
+  const lonN = Number(lon);
+  const radius = Math.min(Math.max(Number(radiusM) || 5000, 500), GYM_RADIUS_MAX_M);
+  if (!Number.isFinite(latN) || !Number.isFinite(lonN) || Math.abs(latN) > 90 || Math.abs(lonN) > 180) {
+    throw new HttpError(400, 'Valid lat and lon are required');
+  }
+  const query = `[out:json][timeout:10];
+(
+  node["leisure"="fitness_centre"](around:${radius},${latN},${lonN});
+  node["amenity"="gym"](around:${radius},${latN},${lonN});
+  way["leisure"="fitness_centre"](around:${radius},${latN},${lonN});
+);
+out center tags 60;`;
+  let r;
+  try {
+    r = await fetch(OVERPASS, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        'User-Agent': 'Gymbulag/1.0 (self-hosted personal workout log)',
+      },
+      body: `data=${encodeURIComponent(query)}`,
+      signal: AbortSignal.timeout(14_000),
+    });
+  } catch {
+    throw new HttpError(502, "Can't reach the map service right now. Try again in a moment.");
+  }
+  if (!r.ok) throw new HttpError(502, `Map service unavailable (${r.status})`);
+  const data = await r.json();
+  const seen = new Set();
+  const gyms = [];
+  for (const el of data.elements ?? []) {
+    const gLat = el.lat ?? el.center?.lat;
+    const gLon = el.lon ?? el.center?.lon;
+    if (gLat == null || gLon == null) continue;
+    const tags = el.tags ?? {};
+    const name = (tags.name || tags.brand || '').trim() || 'Unnamed gym';
+    const key = `${name.toLowerCase()}|${gLat.toFixed(5)}|${gLon.toFixed(5)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    gyms.push({
+      id: `${el.type}/${el.id}`,
+      name,
+      lat: gLat,
+      lon: gLon,
+      distanceKm: Math.round(haversineKm(latN, lonN, gLat, gLon) * 100) / 100,
+      address: gymAddress(tags),
+      phone: tags.phone || tags['contact:phone'] || null,
+      website: tags.website || tags['contact:website'] || null,
+      hours: tags.opening_hours || null,
+      kind: tags.leisure || tags.amenity || 'gym',
+    });
+  }
+  gyms.sort((a, b) => a.distanceKm - b.distanceKm);
+  return { lat: latN, lon: lonN, radiusM: radius, gyms: gyms.slice(0, 40) };
+}
+
 export function createServer(pool) {
   return http.createServer(createHandler(pool));
 }
@@ -147,6 +228,17 @@ export function createHandler(pool) {
       if (url.pathname === '/api/food/search' && req.method === 'GET') {
         return send(res, 200, { products: await searchOpenFoodFacts(url.searchParams.get('q') ?? '') });
       }
+
+      if (url.pathname === '/api/gyms/nearby' && req.method === 'GET') {
+        return send(
+          res,
+          200,
+          await searchNearbyGyms(url.searchParams.get('lat'), url.searchParams.get('lon'), url.searchParams.get('radius') ?? '5000'),
+        );
+      }
+
+      const community = await routeCommunity(pool, auth, req, url, () => readJson(req));
+      if (community !== undefined) return send(res, 200, community);
 
       const m = url.pathname.match(/^\/api\/sync\/([a-z]+)$/);
       if (m && req.method === 'POST') {

@@ -51,10 +51,10 @@ function useIsDark() {
 function useChartTheme() {
   const dark = useIsDark();
   return {
-    accent: dark ? '#818cf8' : '#4f46e5',
-    grid: dark ? '#27272a' : '#e4e4e7',
-    axis: dark ? '#71717a' : '#a1a1aa',
-    surface: dark ? '#18181b' : '#ffffff',
+    accent: dark ? '#c6f000' : '#6b8200',
+    grid: dark ? '#242a32' : '#cfd4db',
+    axis: dark ? '#8b949e' : '#6b7380',
+    surface: dark ? '#12161a' : '#eceff3',
     cursor: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)',
   };
 }
@@ -81,7 +81,7 @@ export default function ProgressPage() {
   return (
     <>
       <PageHeader title="Progress" subtitle="Records, trends, cardio, food and photos" />
-      <div className="mx-auto max-w-3xl px-4 pt-3">
+      <div className="mx-auto max-w-app lg:max-w-app-wide px-4 pt-3">
         <TabBar
           ariaLabel="Progress view"
           value={tab}
@@ -481,7 +481,7 @@ function lastUnitFor(sessions: Session[], exerciseId: string): Unit | undefined 
 
 const RANGE_STYLE: Record<string, string> = {
   strength: 'from-rose-500/15 to-rose-500/5 text-rose-600 dark:text-rose-400',
-  hypertrophy: 'from-indigo-500/15 to-indigo-500/5 text-indigo-600 dark:text-indigo-300',
+  hypertrophy: 'from-volt-500/15 to-volt-500/5 text-volt-700 dark:text-volt-300',
   endurance: 'from-emerald-500/15 to-emerald-500/5 text-emerald-600 dark:text-emerald-400',
 };
 
@@ -765,7 +765,7 @@ function PhotosTab() {
       <div className="flex items-center gap-2">
         <div className="flex-1 text-sm text-zinc-500 dark:text-zinc-400">
           {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-          {comparing && <span className="font-semibold text-indigo-600 dark:text-indigo-300"> · pick {2 - picked.length} more</span>}
+          {comparing && <span className="font-semibold link-accent"> · pick {2 - picked.length} more</span>}
         </div>
         {photos.length >= 2 && !comparing && (
           <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => setCompare([dates[dates.length - 1], dates[0]])}>
@@ -790,7 +790,7 @@ function PhotosTab() {
             <li key={p.date}>
               <button
                 onClick={() => (comparing ? pick(p.date) : setViewer(i))}
-                className={`group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl bg-zinc-200 transition dark:bg-zinc-800 ${on ? 'ring-4 ring-indigo-500' : ''}`}
+                className={`group relative block aspect-[3/4] w-full overflow-hidden rounded-2xl bg-zinc-200 transition dark:bg-zinc-800 ${on ? 'ring-4 ring-volt-500' : ''}`}
                 aria-label={`Photo from ${format(fromKey(p.date), 'MMMM d, yyyy')}`}
               >
                 <PhotoImg photo={p} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
@@ -805,7 +805,7 @@ function PhotosTab() {
                 {baseKg != null && weightByDate.has(p.date) && p.date !== baseDate && (
                   <DeltaChip diffKg={weightByDate.get(p.date)! - baseKg} unit={unit} goal={settings.weightGoal} className="absolute left-1.5 top-1.5 !px-1.5 !text-[10px] shadow" />
                 )}
-                {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-500 text-xs font-bold text-white">{picked.indexOf(p.date) + 1}</span>}
+                {on && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-volt-500 text-xs font-bold text-white">{picked.indexOf(p.date) + 1}</span>}
               </button>
             </li>
           );

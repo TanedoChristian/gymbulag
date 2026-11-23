@@ -42,16 +42,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex w-full max-w-md animate-slide-up items-center gap-3 rounded-xl px-4 py-3 text-sm shadow-lg ring-1 ${
+            className={`pointer-events-auto flex w-full max-w-md animate-slide-up items-center gap-3 rounded-md px-4 py-3 text-sm shadow-lg ring-1 ${
               t.tone === 'error'
-                ? 'bg-red-600 text-white ring-red-700'
-                : 'bg-zinc-900 text-zinc-50 ring-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:ring-zinc-200'
+                ? 'bg-plate-600 text-white ring-plate-700'
+                : 'bg-rack text-steel-bright ring-white/10 dark:bg-steel-bright dark:text-rack dark:ring-steel/20'
             }`}
           >
             <span className="flex-1">{t.message}</span>
             {t.action && (
               <button
-                className="font-semibold text-indigo-300 hover:underline dark:text-indigo-700"
+                className="font-semibold text-volt-400 hover:underline dark:text-volt-700"
                 onClick={() => {
                   t.action!.onClick();
                   dismiss(t.id);

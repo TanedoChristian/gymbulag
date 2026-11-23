@@ -71,11 +71,11 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: M
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className={`relative flex max-h-[92dvh] w-full ${width} animate-slide-up flex-col rounded-t-[28px] border border-zinc-200/70 bg-white shadow-2xl outline-none dark:border-white/10 dark:bg-zinc-900 sm:rounded-[28px]`}
+        className={`relative flex max-h-[92dvh] w-full ${width} animate-slide-up flex-col rounded-t-lg border border-steel/10 bg-floor-soft shadow-2xl outline-none dark:border-white/10 dark:bg-rack-raised sm:rounded-lg`}
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-zinc-300 dark:bg-zinc-700 sm:hidden" aria-hidden />
+        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-floor-mute dark:bg-rack-edge sm:hidden" aria-hidden />
         <div className="flex items-center justify-between gap-2 px-5 pb-3 pt-3 sm:pt-4">
-          <h2 id={titleId} className="text-lg font-extrabold tracking-tight">
+          <h2 id={titleId} className="font-display text-xl font-bold tracking-wide">
             {title}
           </h2>
           <button className="icon-btn -mr-2" onClick={onClose} aria-label="Close">
@@ -165,7 +165,7 @@ export function Segmented<T extends string | number>({
   size?: 'sm' | 'md';
 }) {
   return (
-    <div role="radiogroup" aria-label={ariaLabel} className="inline-flex rounded-xl bg-zinc-900/[0.06] p-1 dark:bg-white/[0.06]">
+    <div role="radiogroup" aria-label={ariaLabel} className="inline-flex rounded-md bg-steel/[0.07] p-1 dark:bg-white/[0.06]">
       {options.map((o) => {
         const active = o.value === value;
         return (
@@ -174,10 +174,10 @@ export function Segmented<T extends string | number>({
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`rounded-lg font-semibold transition ${size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'} ${
+            className={`rounded-sm font-semibold transition ${size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'} ${
               active
-                ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                ? 'bg-floor-soft text-steel shadow-sm dark:bg-rack-edge dark:text-white'
+                : 'text-steel-mute hover:text-steel dark:text-floor-mute dark:hover:text-white'
             }`}
           >
             {o.label}
@@ -197,9 +197,9 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={() => onChange(!checked)}
-      className={`relative h-7 w-12 shrink-0 rounded-full transition ${checked ? 'bg-gradient-to-r from-indigo-500 to-violet-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+      className={`relative h-7 w-12 shrink-0 rounded-md transition ${checked ? 'bg-volt-500' : 'bg-floor-mute dark:bg-rack-edge'}`}
     >
-      <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`} />
+      <span className={`absolute top-1 h-5 w-5 rounded-sm bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`} />
     </button>
   );
 }
@@ -209,12 +209,12 @@ export function Toggle({ checked, onChange, label }: { checked: boolean; onChang
 export function StatTile({ label, value, sub, icon }: { label: string; value: ReactNode; sub?: ReactNode; icon?: ReactNode }) {
   return (
     <div className="card p-4">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-steel-mute dark:text-floor-mute">
         {icon}
         {label}
       </div>
-      <div className="mt-1.5 text-[26px] font-extrabold leading-none tracking-tight tabular">{value}</div>
-      {sub && <div className="mt-1.5 text-xs text-zinc-500 dark:text-zinc-400">{sub}</div>}
+      <div className="mt-1.5 font-mono text-[26px] font-bold leading-none tracking-tight tabular">{value}</div>
+      {sub && <div className="mt-1.5 text-xs text-steel-mute dark:text-floor-mute">{sub}</div>}
     </div>
   );
 }
@@ -222,14 +222,11 @@ export function StatTile({ label, value, sub, icon }: { label: string; value: Re
 export function EmptyState({ icon, title, children }: { icon: ReactNode; title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-col items-center px-6 py-14 text-center">
-      <div className="relative mb-5">
-        <div className="absolute inset-0 rounded-3xl bg-indigo-500/30 blur-xl" aria-hidden />
-        <div className="relative flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg">
-          {icon}
-        </div>
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-md bg-rack text-volt-500">
+        {icon}
       </div>
-      <h3 className="text-lg font-bold tracking-tight">{title}</h3>
-      {children && <div className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">{children}</div>}
+      <h3 className="font-display text-xl font-bold tracking-wide">{title}</h3>
+      {children && <div className="mt-2 max-w-sm text-sm leading-relaxed text-steel-mute dark:text-floor-mute">{children}</div>}
     </div>
   );
 }
@@ -237,14 +234,14 @@ export function EmptyState({ icon, title, children }: { icon: ReactNode; title: 
 export function PageHeader({ title, subtitle, left, right }: { title: ReactNode; subtitle?: ReactNode; left?: ReactNode; right?: ReactNode }) {
   return (
     <header
-      className="sticky top-0 z-30 border-b border-zinc-900/[0.06] bg-[#f4f5f9]/80 backdrop-blur-xl dark:border-white/[0.06] dark:bg-[#07070b]/75"
+      className="sticky top-0 z-30 border-b border-steel/10 bg-floor/90 backdrop-blur-xl dark:border-white/[0.06] dark:bg-floor-dark/90"
       style={{ paddingTop: 'env(safe-area-inset-top)' }}
     >
-      <div className="mx-auto flex h-16 max-w-3xl items-center gap-2 px-4">
+      <div className="mx-auto flex h-14 max-w-app items-center gap-2 px-4 lg:max-w-app-wide lg:px-8">
         {left}
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-extrabold leading-tight tracking-tight">{title}</h1>
-          {subtitle && <div className="truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">{subtitle}</div>}
+          <h1 className="truncate font-display text-2xl font-bold leading-tight tracking-wide">{title}</h1>
+          {subtitle && <div className="truncate text-xs font-medium text-steel-mute dark:text-floor-mute">{subtitle}</div>}
         </div>
         {right}
       </div>
@@ -264,10 +261,10 @@ export function TabBar<T extends string>({ value, onChange, tabs, ariaLabel }: {
             role="tab"
             aria-selected={on}
             onClick={() => onChange(t.value)}
-            className={`inline-flex shrink-0 items-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-3.5 py-2 font-display text-sm font-semibold tracking-wide transition ${
               on
-                ? 'bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-zinc-900'
-                : 'text-zinc-500 hover:bg-zinc-900/[0.05] hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-white/[0.06] dark:hover:text-white'
+                ? 'bg-rack text-steel-bright shadow-sm dark:bg-volt-500 dark:text-volt-ink'
+                : 'text-steel-mute hover:bg-steel/[0.06] hover:text-steel dark:text-floor-mute dark:hover:bg-white/[0.06] dark:hover:text-white'
             }`}
           >
             <span className="hidden sm:inline-flex">{t.icon}</span>
@@ -282,7 +279,7 @@ export function TabBar<T extends string>({ value, onChange, tabs, ariaLabel }: {
 export function Spinner() {
   return (
     <div className="flex justify-center py-16" role="status" aria-label="Loading">
-      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-zinc-300 border-t-indigo-600 dark:border-zinc-700 dark:border-t-indigo-400" />
+      <div className="h-7 w-7 animate-spin rounded-full border-[3px] border-floor-mute border-t-volt-600 dark:border-rack-edge dark:border-t-volt-400" />
     </div>
   );
 }

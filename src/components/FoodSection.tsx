@@ -29,7 +29,7 @@ export function FoodSection({ date }: { date: string }) {
   if (entries.length === 0) {
     return (
       <>
-        <div className="flex items-center gap-3 rounded-[20px] border-2 border-dashed border-zinc-300/80 p-3 dark:border-white/10">
+        <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-zinc-300/80 p-3 dark:border-white/10">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400">
             <Utensils size={20} />
           </span>
@@ -135,7 +135,7 @@ function Totals({ total, goals }: { total: Nutrients; goals: Goals }) {
       <div className="min-w-0 flex-1 space-y-2">
         <div className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {left == null ? (
-            <Link to="/settings#nutrition" className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-300">
+            <Link to="/settings#nutrition" className="inline-flex items-center gap-1 link-accent">
               <Target size={12} /> Set daily goals
             </Link>
           ) : over ? (

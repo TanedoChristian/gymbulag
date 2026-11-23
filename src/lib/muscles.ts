@@ -2,19 +2,19 @@ import type { MuscleGroup } from '../types';
 
 /** Hex colors per muscle group, tuned to read on both light and dark backgrounds. */
 export const MUSCLE_COLORS: Record<MuscleGroup, string> = {
-  chest: '#ef4444',
-  back: '#3b82f6',
-  shoulders: '#f59e0b',
-  biceps: '#8b5cf6',
-  triceps: '#d946ef',
-  forearms: '#a16207',
-  core: '#14b8a6',
-  quads: '#22c55e',
-  hamstrings: '#84cc16',
-  glutes: '#ec4899',
-  calves: '#06b6d4',
-  'full body': '#6366f1',
-  cardio: '#64748b',
+  chest: '#ff4d1a',
+  back: '#5ec8ff',
+  shoulders: '#f0a202',
+  biceps: '#c6f000',
+  triceps: '#ff8a5b',
+  forearms: '#b08968',
+  core: '#3dd68c',
+  quads: '#7bd66e',
+  hamstrings: '#a8d400',
+  glutes: '#ff6b8a',
+  calves: '#4ecdc4',
+  'full body': '#e8ecf0',
+  cardio: '#8b949e',
 };
 
 export function capitalize(s: string): string {

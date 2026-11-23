@@ -67,7 +67,7 @@ function NutritionGroup() {
             {field('fatGoal', 'Fat', 'g', 1000)}
           </div>
           {bw != null && (
-            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-indigo-500/[0.06] p-2.5 text-xs text-zinc-600 dark:text-zinc-300">
+            <div className="flex flex-wrap items-center gap-2 rounded-xl bg-volt-500/10 p-2.5 text-xs text-zinc-600 dark:text-zinc-300">
               <span className="flex-1">
                 For muscle gain, 1.6–2.2 g protein per kg of bodyweight is a common target. At your last logged {trimNumber(bw, 1)} kg that's{' '}
                 <b>
@@ -142,7 +142,7 @@ function AccountGroup() {
   return (
     <Group title="Account">
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-lg font-extrabold text-white">{(user.name || user.email).charAt(0).toUpperCase()}</span>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-volt-500 font-display text-lg font-bold text-volt-ink">{(user.name || user.email).charAt(0).toUpperCase()}</span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">{user.name}</div>
           <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
@@ -355,7 +355,7 @@ export default function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" />
-      <div className="mx-auto max-w-3xl space-y-6 px-4 pt-4">
+      <div className="mx-auto max-w-app lg:max-w-app-wide space-y-6 px-4 pt-4">
         <AccountGroup />
 
         <Group title="Logging">

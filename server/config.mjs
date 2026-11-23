@@ -8,6 +8,11 @@ export const config = {
   host: env.HOST ?? '0.0.0.0',
   /** Optional. When set, creating an account requires this code (useful when the server is reachable from the internet). */
   signupCode: (env.SIGNUP_CODE ?? '').trim(),
+  /** Comma-separated emails that are always admins (how the first admin gets in). */
+  adminEmails: (env.ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean),
   /**
    * Which database to use: 'postgres' (Supabase, used on Vercel) or 'mysql' (local).
    * DB_DRIVER wins; otherwise Postgres when DATABASE_URL is set, else MySQL.

@@ -721,7 +721,7 @@ export function KineticExerciseDemo({ exerciseId, exerciseName, equipment, demo,
 
   return (
     <div
-      className={`demo-stage flex flex-col overflow-hidden rounded-[22px] border border-slate-200/90 bg-gradient-to-b from-slate-50 via-slate-100/70 to-slate-200/70 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.28)] dark:border-white/10 dark:from-[#161c28] dark:via-[#111620] dark:to-[#0c1018] ${className}`}
+      className={`demo-stage flex flex-col overflow-hidden rounded-lg border border-slate-200/90 bg-gradient-to-b from-slate-50 via-slate-100/70 to-slate-200/70 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.28)] dark:border-white/10 dark:from-[#161c28] dark:via-[#111620] dark:to-[#0c1018] ${className}`}
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-200/70 bg-white/70 px-3.5 py-2.5 backdrop-blur dark:border-white/[0.07] dark:bg-white/[0.03]">
         <div className="flex items-center gap-2">

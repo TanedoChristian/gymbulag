@@ -22,7 +22,7 @@ export function ActivitySection({ date }: { date: string }) {
 
   if (list.length === 0) {
     return (
-      <div className="flex items-center gap-3 rounded-[20px] border-2 border-dashed border-zinc-300/80 p-3 dark:border-white/10">
+      <div className="flex items-center gap-3 rounded-lg border-2 border-dashed border-zinc-300/80 p-3 dark:border-white/10">
         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
           <Footprints size={20} />
         </span>

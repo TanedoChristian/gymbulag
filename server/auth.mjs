@@ -112,8 +112,31 @@ async function issueToken(pool, userId, device) {
   return token;
 }
 
+/** Admin by role, or listed in ADMIN_EMAILS. */
+export const isAdminRow = (row) => row.role === 'admin' || config.adminEmails.includes(String(row.email).toLowerCase());
+
+/** Columns for loading a user: everything plus how many communities they own. */
+export const USER_COLUMNS = 'u.*, (SELECT COUNT(*) FROM community_owners o WHERE o.user_id = u.id) AS owned';
+
 function publicUser(row) {
-  return { id: Number(row.id), email: row.email, name: row.name, birthDate: row.birth_date, createdAt: Number(row.created_at) };
+  return {
+    id: Number(row.id),
+    email: row.email,
+    name: row.name,
+    birthDate: row.birth_date,
+    createdAt: Number(row.created_at),
+    role: isAdminRow(row) ? 'admin' : 'user',
+    isOwner: Number(row.owned ?? 0) > 0,
+  };
+}
+
+const loadUser = async (db, id) => (await db.query(`SELECT ${USER_COLUMNS} FROM users u WHERE u.id = $1`, [id])).rows[0];
+
+/** Why this account can't be used, or null when it can. */
+function statusError(row) {
+  if (row.status === 'blocked') return 'This account has been blocked. Contact support if you think this is a mistake.';
+  if (row.status === 'inactive') return 'This account is inactive. Contact support to reactivate it.';
+  return null;
 }
 
 /** The signed-in user for this request, or a 401. */
@@ -123,9 +146,11 @@ export async function requireUser(pool, req) {
   const hash = sha256(token);
   const {
     rows: [row],
-  } = await pool.query('SELECT u.*, t.last_used_at FROM auth_tokens t JOIN users u ON u.id = t.user_id WHERE t.token_hash = $1', [hash]);
+  } = await pool.query(`SELECT ${USER_COLUMNS}, t.last_used_at FROM auth_tokens t JOIN users u ON u.id = t.user_id WHERE t.token_hash = $1`, [hash]);
   const now = Date.now();
   if (!row || now - Number(row.last_used_at) > TOKEN_IDLE_MS) throw new AuthError(401, 'Your login has expired. Please log in again.');
+  const blocked = statusError(row);
+  if (blocked) throw new AuthError(401, blocked);
   // Touch at most once an hour.
   if (now - Number(row.last_used_at) > 3600_000) await pool.query('UPDATE auth_tokens SET last_used_at = $1 WHERE token_hash = $2', [now, hash]);
   return { user: publicUser(row), tokenHash: hash };
@@ -159,9 +184,7 @@ export async function register(pool, body, ctx) {
       if (isDuplicate(e)) throw new AuthError(409, 'An account with this email already exists. Log in instead.');
       throw e;
     }
-    const {
-      rows: [user],
-    } = await conn.query('SELECT * FROM users WHERE id = $1', [id]);
+    const user = await loadUser(conn, id);
     // The very first account takes over anything synced before accounts existed.
     if (Number(n) === 0) for (const t of Object.keys(TABLES)) await conn.query(`UPDATE "${t}" SET user_id = $1 WHERE user_id = 0`, [user.id]);
     return user;
@@ -176,9 +199,11 @@ export async function login(pool, body, ctx) {
   limit(`login:${email}`, 8, 15 * 60_000, 'Too many attempts for this account.');
   const {
     rows: [row],
-  } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+  } = await pool.query(`SELECT ${USER_COLUMNS} FROM users u WHERE u.email = $1`, [email]);
   const ok = await verifyPassword(body.password, row?.password_hash ?? DUMMY_HASH);
   if (!row || !ok) throw new AuthError(401, 'Wrong email or password');
+  const blocked = statusError(row);
+  if (blocked) throw new AuthError(403, blocked);
   clearLimit(`login:${email}`);
   return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
 }
@@ -192,10 +217,7 @@ export async function updateProfile(pool, auth, body) {
   const name = body.name === undefined ? auth.user.name : checkName(body.name);
   const birthDate = body.birthDate === undefined ? auth.user.birthDate : checkBirthDate(body.birthDate);
   await pool.query('UPDATE users SET name = $1, birth_date = $2, updated_at = $3 WHERE id = $4', [name, birthDate, Date.now(), auth.user.id]);
-  const {
-    rows: [row],
-  } = await pool.query('SELECT * FROM users WHERE id = $1', [auth.user.id]);
-  return { user: publicUser(row) };
+  return { user: publicUser(await loadUser(pool, auth.user.id)) };
 }
 
 /** Change password. Every other device is logged out. */

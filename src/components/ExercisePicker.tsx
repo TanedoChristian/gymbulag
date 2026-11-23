@@ -135,7 +135,7 @@ function PickerBody({ onClose, onPick, multiple, title }: Omit<Props, 'open'>) {
       </div>
 
       {q.trim() && !creating && (
-        <button className="mt-3 flex w-full items-center gap-2 rounded-xl border border-dashed border-indigo-400 px-3 py-2.5 text-sm font-semibold text-indigo-600 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-500/10" onClick={() => setCreating(true)}>
+        <button className="mt-3 flex w-full items-center gap-2 rounded-md border border-dashed border-volt-600 px-3 py-2.5 text-sm font-semibold text-volt-700 hover:bg-volt-500/15 dark:text-volt-400 dark:hover:bg-volt-500/15" onClick={() => setCreating(true)}>
           <Plus size={16} /> Create “{q.trim()}”
         </button>
       )}
@@ -194,7 +194,7 @@ function PickerBody({ onClose, onPick, multiple, title }: Omit<Props, 'open'>) {
                     </span>
                   </span>
                   {multiple && (
-                    <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${on ? 'border-indigo-600 bg-indigo-600 text-white' : 'border-zinc-300 dark:border-zinc-600'}`}>
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-full border-2 transition ${on ? 'border-volt-600 bg-volt-500 text-volt-ink' : 'border-zinc-300 dark:border-zinc-600'}`}>
                       {on && <Check size={14} strokeWidth={3} />}
                     </span>
                   )}

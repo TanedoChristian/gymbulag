@@ -121,14 +121,14 @@ function Calculator({ onDone }: { onDone: () => void }) {
               role="radio"
               aria-checked={level === a}
               onClick={() => setActivity(a)}
-              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${level === a ? 'border-indigo-500 bg-indigo-500/[0.07]' : 'border-zinc-200 dark:border-white/10'}`}
+              className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition ${level === a ? 'border-volt-500 bg-volt-500/10' : 'border-zinc-200 dark:border-white/10'}`}
             >
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-semibold">{ACTIVITY_INFO[a].label}</span>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">{ACTIVITY_INFO[a].desc}</span>
               </span>
               <span className="text-xs tabular text-zinc-400">×{ACTIVITY_INFO[a].factor}</span>
-              {level === a && <Check size={16} className="text-indigo-600 dark:text-indigo-300" />}
+              {level === a && <Check size={16} className="link-accent" />}
             </button>
           ))}
         </div>

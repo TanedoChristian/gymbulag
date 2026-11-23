@@ -14,7 +14,7 @@ export function TemplateRow({ t, onPick, disabled }: { t: Template; onPick: (t: 
   const exMap = useExerciseMap();
   return (
     <button className="card card-hover flex w-full items-center gap-3 p-3.5 text-left" onClick={() => onPick(t)} disabled={disabled}>
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
         <ClipboardList size={19} />
       </span>
       <span className="min-w-0 flex-1">
@@ -51,7 +51,7 @@ export function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClo
       ) : (
         <div className="rounded-2xl border border-dashed border-zinc-300 p-5 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-400">
           No templates yet.{' '}
-          <Link to="/library?tab=templates" className="font-semibold text-indigo-600 dark:text-indigo-400" onClick={onClose}>
+          <Link to="/library?tab=templates" className="font-semibold link-accent" onClick={onClose}>
             Create one in the Library
           </Link>
         </div>

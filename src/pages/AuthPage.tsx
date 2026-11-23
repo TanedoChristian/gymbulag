@@ -42,11 +42,11 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-4 py-10">
-      <div className="mb-6 flex flex-col items-center text-center">
-        <img src="/icon.svg" alt="" className="h-14 w-14 rounded-2xl shadow-lg shadow-indigo-500/30" />
-        <h1 className="mt-3 text-2xl font-extrabold tracking-tight">Gymbulag</h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+    <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10 sm:px-6">
+      <div className="mb-8 text-center">
+        <img src="/icon.svg" alt="" className="mx-auto h-14 w-14" />
+        <h1 className="mt-4 font-display text-4xl font-bold tracking-wide">Gymbulag</h1>
+        <p className="mt-2 text-sm text-steel-mute dark:text-floor-mute">
           {pending ? 'One more thing' : expired ? 'Your login expired. Log in again to keep syncing.' : mode === 'login' ? 'Log in to see your workouts and food on every device.' : 'Create your account.'}
         </p>
       </div>
@@ -56,9 +56,9 @@ export default function AuthPage() {
       ) : (
         <>
           {!expired && (
-            <div className="mb-4 grid grid-cols-2 gap-1 rounded-2xl bg-zinc-900/[0.05] p-1 dark:bg-white/[0.06]" role="tablist">
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-md bg-steel/[0.06] p-1 dark:bg-white/[0.06]" role="tablist">
               {(['login', 'signup'] as const).map((m) => (
-                <button key={m} role="tab" aria-selected={mode === m} className={`rounded-xl py-2 text-sm font-bold transition ${mode === m ? 'bg-white shadow-sm dark:bg-zinc-800' : 'text-zinc-500 dark:text-zinc-400'}`} onClick={() => setMode(m)}>
+                <button key={m} role="tab" aria-selected={mode === m} className={`rounded-sm py-2 font-display text-sm font-semibold uppercase tracking-wide transition ${mode === m ? 'bg-rack text-volt-500 shadow-sm dark:bg-volt-500 dark:text-volt-ink' : 'text-steel-mute dark:text-floor-mute'}`} onClick={() => setMode(m)}>
                   {m === 'login' ? 'Log in' : 'Sign up'}
                 </button>
               ))}
@@ -226,7 +226,7 @@ function DeviceDataStep({ summary, onChoose, onCancel }: { summary: LocalSummary
   return (
     <div className="card space-y-3 p-4">
       <div className="flex gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-300">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-volt-500/15 link-accent">
           <UploadCloud size={20} />
         </span>
         <div className="text-sm">

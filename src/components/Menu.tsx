@@ -74,7 +74,7 @@ export function Menu({
                 it.onSelect();
               }}
               className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium transition hover:bg-zinc-100 disabled:opacity-40 dark:hover:bg-zinc-700 ${
-                it.danger ? 'text-red-600 dark:text-red-400' : it.active ? 'text-indigo-600 dark:text-indigo-400' : ''
+                it.danger ? 'text-red-600 dark:text-red-400' : it.active ? 'link-accent' : ''
               }`}
             >
               {it.icon}

@@ -7,6 +7,10 @@ export interface User {
   /** yyyy-MM-dd */
   birthDate: string;
   createdAt: number;
+  /** 'admin' runs the admin panel. Missing on logins saved before roles existed. */
+  role?: 'user' | 'admin';
+  /** Was given access to at least one gym community's dashboard. */
+  isOwner?: boolean;
 }
 
 export interface AuthState {

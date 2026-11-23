@@ -249,7 +249,7 @@ export function SessionEditor({ id }: { id: string }) {
       {draft.exercises.length === 0 ? (
         <div className="card p-5">
           <div className="flex flex-col items-center text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/30">
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-md bg-volt-500 text-volt-ink">
               <Dumbbell size={24} />
             </div>
             <div className="text-base font-bold">What did you train?</div>

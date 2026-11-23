@@ -7,7 +7,7 @@ export default function NotFound() {
     <>
       <PageHeader title="Not found" />
       <EmptyState icon={<Compass />} title="This page doesn't exist">
-        <Link to="/" className="font-semibold text-indigo-600 dark:text-indigo-400">
+        <Link to="/" className="font-semibold link-accent">
           Go to calendar
         </Link>
       </EmptyState>

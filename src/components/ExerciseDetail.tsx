@@ -59,7 +59,7 @@ export function ExerciseDetail({ exercise, onClose, onEdit, usage = 0 }: Props) 
           <span className="rounded-lg bg-zinc-100 px-2 py-1 font-semibold capitalize text-zinc-600 dark:bg-white/10 dark:text-zinc-300">
             {exercise.equipment}
           </span>
-          {exercise.custom && <span className="rounded-lg bg-violet-500/15 px-2 py-1 font-semibold text-violet-600 dark:text-violet-300">Custom</span>}
+          {exercise.custom && <span className="rounded-lg bg-volt-500/15 px-2 py-1 font-semibold text-volt-700 dark:text-volt-300">Custom</span>}
         </div>
 
         <Segmented

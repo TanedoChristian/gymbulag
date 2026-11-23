@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { addDays, addMonths, endOfMonth, endOfWeek, format, isSameMonth, isValid, parse, startOfMonth, startOfWeek } from 'date-fns';
-import { ArrowRight, Camera, ChevronLeft, ChevronRight, Dumbbell, Flame, Footprints, Plus, Trophy, Utensils } from 'lucide-react';
+import { ArrowRight, Camera, ChevronLeft, ChevronRight, Dumbbell, Flame, Footprints, MapPin, Plus, Trophy, Utensils } from 'lucide-react';
 import { fmtG, fmtKcal, sumNutrients } from '../lib/food';
 import { db } from '../db';
 import { useAllActivities, useAllSessions, useExerciseMap, useSettings } from '../hooks/data';
@@ -104,54 +104,51 @@ export default function CalendarPage() {
   const isCurrentMonth = isSameMonth(month, new Date());
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4 px-4" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
-      {/* Brand row */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <img src="/icon.svg" alt="" className="h-9 w-9 rounded-xl shadow-md shadow-indigo-500/30" />
-          <div>
-            <div className="text-lg font-extrabold leading-none tracking-tight">Gymbulag</div>
-            <div className="mt-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">{format(new Date(), 'EEEE, MMMM d')}</div>
+    <div className="mx-auto max-w-app space-y-4 px-4 lg:max-w-app-wide lg:px-8" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+      {/* Hero — brand owns the first viewport */}
+      <section className="hero-panel p-5 text-steel-bright sm:p-6">
+        <div className="relative pl-2">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="font-display text-5xl font-bold leading-[0.9] tracking-wide sm:text-6xl">Gymbulag</div>
+              <div className="mt-2 text-sm font-medium text-floor-mute">
+                {greeting()}{firstName ? `, ${firstName}` : ''} · {format(new Date(), 'EEEE, MMM d')}
+              </div>
+            </div>
+            <img src="/icon.svg" alt="" className="mt-1 h-10 w-10 shrink-0 sm:h-12 sm:w-12" />
           </div>
-        </div>
-      </div>
-
-      {/* Hero */}
-      <section className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-5 text-white shadow-[0_24px_60px_-24px_rgba(79,70,229,0.75)]">
-        <div className="absolute -right-12 -top-12 h-48 w-48 rounded-full bg-white/10 blur-2xl" aria-hidden />
-        <div className="absolute -bottom-20 -left-10 h-52 w-52 rounded-full bg-fuchsia-400/25 blur-3xl" aria-hidden />
-        <div className="relative">
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">{greeting()}{firstName ? `, ${firstName}` : ''}</div>
+          <div className="mt-5 border-t border-white/10 pt-4">
+          <div className="eyebrow text-volt-500">{todaySession && sessionHasContent(todaySession) ? 'Session logged' : 'Open rack'}</div>
           {todaySession && sessionHasContent(todaySession) ? (
             <>
-              <div className="mt-1 text-2xl font-extrabold tracking-tight">{sessionTitle(todaySession, exMap)} ✓</div>
-              <div className="text-sm text-white/75">
-                {sessionWorkingSets(todaySession)} sets · {formatVolume(sessionVolume(todaySession), settings.unit)} {settings.unit} today
+              <div className="mt-1 font-display text-2xl font-bold tracking-wide">{sessionTitle(todaySession, exMap)}</div>
+              <div className="mt-1 font-mono text-sm text-floor-mute">
+                {sessionWorkingSets(todaySession)} sets · {formatVolume(sessionVolume(todaySession), settings.unit)} {settings.unit}
               </div>
             </>
           ) : (
             <>
-              <div className="mt-1 text-2xl font-extrabold tracking-tight">Ready to log?</div>
-              <div className="text-sm text-white/75">Tap a day below, or log today’s workout.</div>
+              <div className="mt-1 font-display text-2xl font-bold tracking-wide">Ready to train?</div>
+              <div className="mt-1 text-sm text-floor-mute">Log today, or tap any day on the grid.</div>
             </>
           )}
           {todayFood && (
-            <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-white/90">
-              <Utensils size={14} />
+            <div className="mt-2 flex items-center gap-1.5 text-sm font-semibold text-steel-bright/90">
+              <Utensils size={14} className="text-volt-500" />
               {fmtKcal(todayFood.kcal)}
               {settings.kcalGoal ? ` / ${fmtKcal(settings.kcalGoal)}` : ''} kcal · {fmtG(todayFood.protein)}
               {settings.proteinGoal ? ` / ${settings.proteinGoal}` : ''} g protein
             </div>
           )}
           {todayCardio && (
-            <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-white/90">
-              <Footprints size={14} />
+            <div className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-steel-bright/90">
+              <Footprints size={14} className="text-volt-500" />
               {[todayCardio.distance && `${formatKm(todayCardio.distance)} km`, todayCardio.steps && `${formatSteps(todayCardio.steps)} steps`].filter(Boolean).join(' · ') || `${todayCardio.count} logged`} today
             </div>
           )}
           <Link
             to={todaySession ? `/day/${today}?s=${todaySession.id}` : `/day/${today}`}
-            className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 shadow-lg transition hover:bg-indigo-50 active:scale-[0.97]"
+            className="btn-primary mt-5"
           >
             {todaySession ? (
               <>
@@ -164,31 +161,43 @@ export default function CalendarPage() {
             )}
           </Link>
 
-          <div className="mt-5 grid grid-cols-3 divide-x divide-white/15 rounded-2xl bg-white/10 py-3 backdrop-blur">
+          <div className="mt-5 grid grid-cols-3 divide-x divide-white/10 border border-white/10 bg-black/25 py-3">
             <HeroStat label="This week" value={thisWeekCount} sub={thisWeekCount === 1 ? 'day' : 'days'} />
             <HeroStat
               label="Streak"
               value={
                 <span className="inline-flex items-center gap-1">
                   {streak}
-                  {streak > 0 && <Flame size={18} className="text-orange-300" />}
+                  {streak > 0 && <Flame size={18} className="text-plate-400" />}
                 </span>
               }
               sub={streak === 1 ? 'week' : 'weeks'}
             />
             <HeroStat label={format(month, 'MMMM')} value={formatVolume(monthVolume, settings.unit)} sub={`${settings.unit} · ${monthDays} ${monthDays === 1 ? 'day' : 'days'}`} />
           </div>
+          </div>
         </div>
       </section>
+
+      <Link to="/community?tab=nearby" className="card card-hover flex items-center gap-3 p-3.5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
+          <MapPin size={19} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-bold">Gyms near me</span>
+          <span className="block text-xs text-steel-mute dark:text-floor-mute">Find a fitness centre around you</span>
+        </span>
+        <ArrowRight size={18} className="shrink-0 text-steel-mute" />
+      </Link>
 
       {/* Calendar */}
       <section className="card p-3 sm:p-4" aria-label="Calendar">
         <div className="mb-2 flex items-center gap-1 px-1">
-          <h2 className="flex-1 text-lg font-extrabold tracking-tight" aria-live="polite">
-            {format(month, 'MMMM')} <span className="font-semibold text-zinc-400">{format(month, 'yyyy')}</span>
+          <h2 className="flex-1 font-display text-xl font-bold tracking-wide" aria-live="polite">
+            {format(month, 'MMMM')} <span className="font-semibold text-steel-mute">{format(month, 'yyyy')}</span>
           </h2>
           {!isCurrentMonth && (
-            <button className="rounded-lg px-2 py-1 text-xs font-bold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-300" onClick={() => setMonth(startOfMonth(new Date()))}>
+            <button className="rounded-lg px-2 py-1 text-xs font-bold text-volt-700 dark:text-volt-400 hover:bg-volt-500/15 dark:text-volt-300" onClick={() => setMonth(startOfMonth(new Date()))}>
               Today
             </button>
           )}
@@ -235,20 +244,20 @@ export default function CalendarPage() {
                 key={key}
                 onClick={() => navigate(`/day/${key}`)}
                 aria-label={label}
-                className={`relative flex aspect-square flex-col items-center justify-center rounded-2xl text-[15px] font-bold tabular transition active:scale-90 sm:aspect-[1.1] ${
+                className={`relative flex aspect-square flex-col items-center justify-center rounded-md text-[15px] font-bold tabular transition active:scale-95 sm:aspect-[1.1] ${
                   trained
-                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-[0_6px_16px_-8px_rgba(79,70,229,0.9)] hover:brightness-110'
+                    ? 'bg-rack text-volt-500 shadow-panel hover:bg-steel dark:hover:bg-rack-edge'
                     : cardio && inMonth
                       ? 'bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/25 dark:text-emerald-300'
                     : inMonth
-                      ? 'text-zinc-800 hover:bg-zinc-900/[0.05] dark:text-zinc-200 dark:hover:bg-white/[0.06]'
-                      : 'text-zinc-300 hover:bg-zinc-900/[0.03] dark:text-zinc-700 dark:hover:bg-white/[0.03]'
-                } ${isToday && !trained ? 'bg-indigo-500/10 text-indigo-600 ring-2 ring-inset ring-indigo-500 dark:text-indigo-300' : ''} ${
-                  isToday && trained ? 'ring-2 ring-indigo-300 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900' : ''
+                      ? 'text-steel hover:bg-steel/[0.06] dark:text-steel-bright dark:hover:bg-white/[0.06]'
+                      : 'text-floor-mute hover:bg-steel/[0.03] dark:text-rack-edge dark:hover:bg-white/[0.03]'
+                } ${isToday && !trained ? 'bg-volt-500/15 text-volt-700 ring-2 ring-inset ring-volt-500 dark:text-volt-400' : ''} ${
+                  isToday && trained ? 'ring-2 ring-volt-500 ring-offset-2 ring-offset-floor-soft dark:ring-offset-rack-raised' : ''
                 } ${!inMonth && trained ? 'opacity-40' : ''}`}
               >
                 {hasPR && (
-                  <span className="absolute -left-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 ring-2 ring-white dark:ring-zinc-900" aria-hidden>
+                  <span className="absolute -left-1 -top-1 z-10 flex h-4 w-4 items-center justify-center rounded-sm bg-amber-400 text-amber-950 ring-2 ring-white dark:ring-zinc-900" aria-hidden>
                     <Trophy size={8} strokeWidth={3} />
                   </span>
                 )}
@@ -267,7 +276,7 @@ export default function CalendarPage() {
                   {muscles.map((m) => (
                     <span key={m} className="h-1.5 w-1.5 rounded-full ring-1 ring-white/80" style={{ background: MUSCLE_COLORS[m] }} />
                   ))}
-                  {planned && <span className="h-1.5 w-1.5 rounded-full border border-indigo-500" />}
+                  {planned && <span className="h-1.5 w-1.5 rounded-full border border-volt-500" />}
                 </span>
               </button>
             );
@@ -275,7 +284,7 @@ export default function CalendarPage() {
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 border-t border-zinc-100 pt-3 text-[11px] font-medium text-zinc-500 dark:border-white/[0.05] dark:text-zinc-400">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-[5px] bg-gradient-to-br from-indigo-500 to-violet-600" /> Trained
+            <span className="h-3 w-3 rounded-sm bg-rack ring-1 ring-volt-500" /> Trained
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-400 text-amber-950">
@@ -309,9 +318,9 @@ export default function CalendarPage() {
               return (
                 <li key={s.id}>
                   <Link to={`/day/${s.date}?s=${s.id}`} className="card card-hover flex items-center gap-3 p-3">
-                    <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl bg-zinc-900/[0.04] dark:bg-white/[0.06]">
-                      <span className="text-[10px] font-bold uppercase text-zinc-500">{format(fromKey(s.date), 'EEE')}</span>
-                      <span className="text-lg font-extrabold leading-none">{format(fromKey(s.date), 'd')}</span>
+                    <div className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-md bg-rack text-steel-bright">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-volt-500">{format(fromKey(s.date), 'EEE')}</span>
+                      <span className="font-mono text-lg font-bold leading-none">{format(fromKey(s.date), 'd')}</span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 truncate font-bold">
@@ -346,9 +355,9 @@ export default function CalendarPage() {
 function HeroStat({ label, value, sub }: { label: string; value: ReactNode; sub: string }) {
   return (
     <div className="px-3 text-center">
-      <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-white/60">{label}</div>
-      <div className="mt-1 text-xl font-extrabold leading-none tabular">{value}</div>
-      <div className="mt-1 truncate text-[11px] text-white/70">{sub}</div>
+      <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-floor-mute">{label}</div>
+      <div className="mt-1 font-mono text-xl font-bold leading-none tabular text-volt-500">{value}</div>
+      <div className="mt-1 truncate text-[11px] text-floor-mute">{sub}</div>
     </div>
   );
 }

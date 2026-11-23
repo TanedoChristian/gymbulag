@@ -63,7 +63,7 @@ export function MuscleHitPanel({ exerciseName, muscleGroup, primary, secondary }
 
       {selected && focus && (
         <section
-          className="overflow-hidden rounded-[20px] border bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] dark:bg-white/[0.04] dark:shadow-none"
+          className="overflow-hidden rounded-lg border bg-white shadow-[0_10px_30px_-18px_rgba(15,23,42,0.25)] dark:bg-white/[0.04] dark:shadow-none"
           style={{ borderColor: `${roleColor}38` }}
           aria-live="polite"
         >
@@ -102,7 +102,7 @@ export function MuscleHitPanel({ exerciseName, muscleGroup, primary, secondary }
         {secondary.length > 0 ? (
           <MuscleGroupList title="Assisting" subtitle="Stabilizers" parts={secondary} focus={focus} onSelect={select} />
         ) : (
-          <div className="flex items-center rounded-[20px] border border-dashed border-zinc-200 px-4 py-3 dark:border-white/10">
+          <div className="flex items-center rounded-lg border border-dashed border-zinc-200 px-4 py-3 dark:border-white/10">
             <p className="text-xs leading-relaxed text-zinc-500">
               <span className="font-bold text-zinc-700 dark:text-zinc-200">Isolation focus.</span> No major assisting muscle is emphasised.
             </p>
@@ -139,7 +139,7 @@ function BodyCard({
 
   return (
     <figure
-      className={`overflow-hidden rounded-[22px] border bg-gradient-to-b from-slate-50 via-slate-100/80 to-slate-200/70 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.35)] transition dark:from-[#161c28] dark:via-[#111620] dark:to-[#0c1018] ${
+      className={`overflow-hidden rounded-lg border bg-gradient-to-b from-slate-50 via-slate-100/80 to-slate-200/70 shadow-[0_14px_34px_-22px_rgba(15,23,42,0.35)] transition dark:from-[#161c28] dark:via-[#111620] dark:to-[#0c1018] ${
         focusHere ? 'border-red-400/60 dark:border-red-400/35' : 'border-slate-200/90 dark:border-white/10'
       }`}
     >
@@ -173,7 +173,7 @@ function MuscleGroupList({
 }) {
   const color = primary ? PRIMARY : SECONDARY;
   return (
-    <div className="rounded-[20px] border border-zinc-200/80 bg-white p-3 dark:border-white/10 dark:bg-white/[0.035]">
+    <div className="rounded-lg border border-zinc-200/80 bg-white p-3 dark:border-white/10 dark:bg-white/[0.035]">
       <div className="flex items-baseline justify-between gap-2 px-1">
         <h4 className="text-xs font-extrabold tracking-tight">{title}</h4>
         <p className="truncate text-[10px] font-medium text-zinc-400">{subtitle}</p>

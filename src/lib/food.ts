@@ -4,7 +4,7 @@ import { trimNumber } from './units';
 import type { Food, FoodEntry, FoodPortion, FoodTrust, Meal, Nutrients } from '../types';
 
 export const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
-export const MACRO_COLOR = { protein: '#6366f1', carbs: '#f59e0b', fat: '#ec4899', kcal: '#10b981' } as const;
+export const MACRO_COLOR = { protein: '#c6f000', carbs: '#ff6e40', fat: '#5ec8ff', kcal: '#3dd68c' } as const;
 
 export const TRUST_INFO: Record<FoodTrust, { label: string; desc: string }> = {
   verified: { label: 'Verified', desc: 'Lab-measured values from USDA FoodData Central (US government, public domain).' },

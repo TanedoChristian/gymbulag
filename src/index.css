@@ -8,23 +8,47 @@
     text-size-adjust: 100%;
   }
   body {
-    @apply bg-[#f4f5f9] text-zinc-900 antialiased dark:bg-[#07070b] dark:text-zinc-100;
-    font-feature-settings: 'cv11', 'ss01';
-    background-image: radial-gradient(900px 480px at 50% -180px, rgba(99, 102, 241, 0.10), transparent 70%);
+    @apply bg-floor text-steel antialiased dark:bg-floor-dark dark:text-steel-bright;
+    font-feature-settings: 'tnum' 1;
+    /* Cool concrete grain + faint volt wash — no purple orbs */
+    background-image:
+      radial-gradient(ellipse 110% 70% at 100% -10%, rgba(198, 240, 0, 0.07), transparent 55%),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(17, 20, 24, 0.02) 3px,
+        rgba(17, 20, 24, 0.02) 4px
+      );
     background-attachment: fixed;
   }
   .dark body {
-    background-image: radial-gradient(900px 520px at 50% -200px, rgba(99, 102, 241, 0.22), transparent 70%),
-      radial-gradient(600px 400px at 100% 0%, rgba(168, 85, 247, 0.08), transparent 70%);
+    background-image:
+      radial-gradient(ellipse 90% 55% at 85% -5%, rgba(198, 240, 0, 0.08), transparent 50%),
+      radial-gradient(ellipse 60% 40% at 0% 100%, rgba(255, 77, 26, 0.05), transparent 55%),
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(255, 255, 255, 0.015) 3px,
+        rgba(255, 255, 255, 0.015) 4px
+      );
   }
   :focus-visible {
-    @apply outline-none ring-2 ring-indigo-500 ring-offset-2 ring-offset-[#f4f5f9] dark:ring-offset-[#07070b];
+    @apply outline-none ring-2 ring-volt-500 ring-offset-2 ring-offset-floor dark:ring-offset-floor-dark;
   }
   input[type='time']::-webkit-calendar-picker-indicator {
     @apply opacity-60 dark:invert;
   }
   ::selection {
-    @apply bg-indigo-500/30;
+    @apply bg-volt-500/35 text-steel dark:text-rack;
+  }
+  h1,
+  h2,
+  .font-display {
+    font-family: Oswald, ui-sans-serif, sans-serif;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
 }
 
@@ -41,52 +65,80 @@
 
 @layer components {
   .btn {
-    @apply inline-flex select-none items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition duration-150 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold uppercase tracking-wide transition duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50;
+    font-family: Oswald, ui-sans-serif, sans-serif;
   }
   .btn-primary {
-    @apply btn bg-gradient-to-b from-indigo-500 to-indigo-600 text-white shadow-[0_6px_20px_-6px_rgba(79,70,229,0.65),inset_0_1px_0_rgba(255,255,255,0.18)] hover:from-indigo-400 hover:to-indigo-600;
+    @apply btn bg-volt-500 text-volt-ink hover:bg-volt-400;
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
   }
   .btn-secondary {
-    @apply btn bg-zinc-900/[0.06] text-zinc-900 hover:bg-zinc-900/10 dark:bg-white/[0.07] dark:text-zinc-100 dark:hover:bg-white/[0.12];
+    @apply btn border border-steel/15 bg-floor-soft text-steel hover:bg-white dark:border-white/15 dark:bg-white/[0.06] dark:text-steel-bright dark:hover:bg-white/[0.1];
   }
   .btn-ghost {
-    @apply btn text-zinc-700 hover:bg-zinc-900/[0.05] dark:text-zinc-300 dark:hover:bg-white/[0.06];
+    @apply btn text-steel-mute hover:bg-steel/[0.06] hover:text-steel dark:text-floor-mute dark:hover:bg-white/[0.06] dark:hover:text-white;
   }
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-500;
+    @apply btn bg-plate-600 text-white hover:bg-plate-500;
   }
   .icon-btn {
-    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-zinc-500 transition hover:bg-zinc-900/[0.06] hover:text-zinc-900 active:scale-95 disabled:opacity-40 dark:text-zinc-400 dark:hover:bg-white/[0.08] dark:hover:text-zinc-100;
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-steel-mute transition hover:bg-steel/[0.07] hover:text-steel active:scale-95 disabled:opacity-40 dark:text-floor-mute dark:hover:bg-white/[0.08] dark:hover:text-white;
   }
   .input {
-    @apply w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/15 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-100 dark:placeholder:text-zinc-500;
+    @apply w-full rounded-md border border-steel/15 bg-floor-soft px-3 py-2.5 text-sm text-steel placeholder:text-steel-mute/70 focus:border-volt-600 focus:outline-none focus:ring-2 focus:ring-volt-500/25 dark:border-white/15 dark:bg-white/[0.04] dark:text-steel-bright dark:placeholder:text-floor-mute;
   }
   .card {
-    @apply rounded-[20px] border border-zinc-200/70 bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_8px_24px_-12px_rgba(16,24,40,0.08)] dark:border-white/[0.07] dark:bg-zinc-900/60 dark:shadow-none dark:backdrop-blur-xl;
+    @apply rounded-lg border border-steel/10 bg-floor-soft shadow-panel dark:border-white/10 dark:bg-rack-raised dark:shadow-panel-dark;
   }
   .card-hover {
-    @apply transition duration-150 hover:-translate-y-px hover:border-indigo-300 hover:shadow-[0_10px_30px_-12px_rgba(79,70,229,0.35)] dark:hover:border-indigo-400/40;
+    @apply transition duration-150 hover:border-volt-500/45 hover:shadow-[0_8px_28px_-18px_rgba(198,240,0,0.35)];
   }
   .label {
-    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400;
+    @apply mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-steel-mute dark:text-floor-mute;
+    font-family: Oswald, ui-sans-serif, sans-serif;
   }
   .eyebrow {
-    @apply text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-400 dark:text-zinc-500;
+    @apply text-[11px] font-bold uppercase tracking-[0.16em] text-steel-mute dark:text-floor-mute;
+    font-family: Oswald, ui-sans-serif, sans-serif;
   }
   .chip {
-    @apply inline-flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-semibold capitalize transition;
+    @apply inline-flex shrink-0 items-center gap-1 rounded-md border px-2.5 py-1 text-xs font-semibold capitalize transition;
   }
   .chip-off {
-    @apply chip border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 dark:border-white/10 dark:bg-white/[0.03] dark:text-zinc-300 dark:hover:bg-white/[0.07];
+    @apply chip border-steel/10 bg-floor-soft text-steel-soft hover:border-steel/20 dark:border-white/10 dark:bg-white/[0.03] dark:text-floor-mute dark:hover:bg-white/[0.07];
   }
   .chip-on {
-    @apply chip border-transparent bg-zinc-900 text-white dark:bg-white dark:text-zinc-900;
+    @apply chip border-transparent bg-rack text-steel-bright dark:bg-volt-500 dark:text-volt-ink;
   }
   .set-input {
-    @apply h-10 w-full rounded-xl border border-transparent bg-zinc-100 text-center text-base font-bold tabular text-zinc-900 transition placeholder:font-medium placeholder:text-zinc-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/15 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-zinc-600 dark:focus:bg-zinc-900;
+    @apply h-10 w-full rounded-md border border-transparent bg-steel/[0.06] text-center font-mono text-base font-bold tabular text-steel transition placeholder:font-sans placeholder:font-medium placeholder:text-steel-mute/60 focus:border-volt-600 focus:bg-floor-soft focus:outline-none focus:ring-2 focus:ring-volt-500/25 dark:bg-white/[0.06] dark:text-white dark:placeholder:text-floor-mute dark:focus:bg-rack;
   }
-  .gradient-text {
-    @apply bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500 bg-clip-text text-transparent;
+  .hero-panel {
+    @apply relative overflow-hidden rounded-lg bg-rack text-steel-bright shadow-rack;
+    background-image:
+      linear-gradient(145deg, #14181d 0%, #0a0c0e 55%, #16120f 100%),
+      repeating-linear-gradient(
+        -14deg,
+        transparent,
+        transparent 10px,
+        rgba(255, 255, 255, 0.018) 10px,
+        rgba(255, 255, 255, 0.018) 11px
+      );
+  }
+  .hero-panel::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: #c6f000;
+  }
+  .link-accent {
+    @apply font-semibold text-volt-700 hover:text-volt-600 dark:text-volt-400 dark:hover:text-volt-300;
+  }
+  .accent-soft {
+    @apply bg-volt-500/15 text-volt-700 dark:bg-volt-500/15 dark:text-volt-300;
   }
 }
 
@@ -187,7 +239,8 @@
 
 @media (prefers-reduced-motion: reduce) {
   .motion-muscle-pulse,
-  .anatomy-focus {
+  .anatomy-focus,
+  .animate-volt-pulse {
     animation: none;
   }
 }

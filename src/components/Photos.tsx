@@ -61,9 +61,9 @@ export function DayPhotoCard({ date }: { date: string }) {
         {picker.el}
         <button
           onClick={picker.open}
-          className="group flex w-full items-center gap-3 rounded-[20px] border-2 border-dashed border-zinc-300/80 p-3 text-left transition hover:border-indigo-400 hover:bg-indigo-500/[0.04] dark:border-white/10 dark:hover:border-indigo-400/50"
+          className="group flex w-full items-center gap-3 rounded-lg border-2 border-dashed border-zinc-300/80 p-3 text-left transition hover:border-volt-600 hover:bg-volt-500/10 dark:border-white/10 dark:hover:border-volt-600/50"
         >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-900/[0.05] text-zinc-500 transition group-hover:bg-indigo-500 group-hover:text-white dark:bg-white/[0.06] dark:text-zinc-400">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-steel/[0.06] text-zinc-500 transition group-hover:bg-volt-500/150 group-hover:text-white dark:bg-white/[0.06] dark:text-zinc-400">
             <Camera size={20} />
           </span>
           <span className="min-w-0 flex-1">

@@ -243,7 +243,7 @@ function SearchView({ onPick, onQuick, onCreate, onScan }: { onPick: (f: Food) =
 function ActionTile({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="card card-hover flex flex-col items-center gap-1.5 p-3 text-xs font-bold">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-300">{icon}</span>
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-volt-500/15 link-accent">{icon}</span>
       {label}
     </button>
   );

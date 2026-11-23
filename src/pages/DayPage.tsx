@@ -33,7 +33,7 @@ export default function DayPage() {
       <>
         <PageHeader title="Invalid date" left={<BackButton to="/" />} />
         <EmptyState icon={<Moon />} title="That date doesn't exist">
-          <Link className="font-semibold text-indigo-600 dark:text-indigo-400" to="/">
+          <Link className="font-semibold link-accent" to="/">
             Back to calendar
           </Link>
         </EmptyState>
@@ -81,7 +81,7 @@ function Day({ date }: { date: string }) {
         right={
           <div className="flex items-center">
             {date !== todayKey() && (
-              <Link className="mr-1 rounded-lg px-2 py-1.5 text-xs font-bold text-indigo-600 hover:bg-indigo-500/10 dark:text-indigo-300" to={`/day/${todayKey()}`}>
+              <Link className="mr-1 rounded-lg px-2 py-1.5 text-xs font-bold text-volt-700 dark:text-volt-400 hover:bg-volt-500/15 dark:text-volt-300" to={`/day/${todayKey()}`}>
                 Today
               </Link>
             )}
@@ -94,7 +94,7 @@ function Day({ date }: { date: string }) {
           </div>
         }
       />
-      <div className="mx-auto max-w-3xl space-y-3 px-4 pt-4">
+      <div className="mx-auto max-w-app space-y-3 px-4 pt-4 lg:max-w-app-wide lg:px-8">
         <DayPhotoCard date={date} />
         <DayWeightCard date={date} />
         <ActivitySection date={date} />
@@ -162,16 +162,14 @@ function StartDay({ date, onCreated }: { date: string; onCreated: (s: Session) =
 
   return (
     <div className="space-y-4">
-      <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-6 text-white shadow-[0_20px_50px_-20px_rgba(79,70,229,0.7)]">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden />
-        <div className="absolute -bottom-16 -left-8 h-44 w-44 rounded-full bg-fuchsia-400/20 blur-3xl" aria-hidden />
-        <div className="relative">
-          <div className="text-xs font-bold uppercase tracking-[0.14em] text-white/70">{future ? 'Plan ahead' : 'Log a workout'}</div>
-          <div className="mt-1 text-2xl font-extrabold tracking-tight">{future ? 'Nothing planned yet' : date === todayKey() ? 'What did you hit today?' : `What did you hit on ${format(fromKey(date), 'EEEE')}?`}</div>
-          <p className="mt-1 max-w-sm text-sm text-white/75">
+      <div className="hero-panel p-6 text-steel-bright">
+        <div className="relative pl-2">
+          <div className="eyebrow text-volt-500">{future ? 'Plan ahead' : 'Log a workout'}</div>
+          <div className="mt-1 font-display text-3xl font-bold tracking-wide">{future ? 'Nothing planned yet' : date === todayKey() ? 'What did you hit today?' : `What did you hit on ${format(fromKey(date), 'EEEE')}?`}</div>
+          <p className="mt-2 max-w-sm text-sm text-floor-mute">
             {future ? 'Plan a session and it will show up on your calendar.' : 'Add your exercises with the weight and reps for each set. You can log it any time after training.'}
           </p>
-          <button className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-indigo-700 shadow-lg transition hover:bg-indigo-50 active:scale-[0.97] disabled:opacity-60" disabled={busy} onClick={() => run(() => createSession(date))}>
+          <button className="btn-primary mt-5" disabled={busy} onClick={() => run(() => createSession(date))}>
             <Plus size={18} strokeWidth={2.5} /> Start logging
           </button>
         </div>
@@ -179,10 +177,10 @@ function StartDay({ date, onCreated }: { date: string; onCreated: (s: Session) =
 
       {templates === undefined ? null : templates.length === 0 ? (
         <div className="card flex items-start gap-3 p-4 text-sm text-zinc-500 dark:text-zinc-400">
-          <Sparkles size={18} className="mt-0.5 shrink-0 text-violet-500" />
+          <Sparkles size={18} className="mt-0.5 shrink-0 text-volt-600" />
           <span>
             Save any session as a template, or build one in the{' '}
-            <Link to="/library?tab=templates" className="font-semibold text-indigo-600 dark:text-indigo-400">
+            <Link to="/library?tab=templates" className="font-semibold link-accent">
               Library
             </Link>
             , to load all its exercises with one tap.
@@ -205,7 +203,7 @@ function StartDay({ date, onCreated }: { date: string; onCreated: (s: Session) =
 
       {previous && (
         <button className="card card-hover flex w-full items-center gap-3 p-4 text-left" disabled={busy} onClick={() => run(() => repeatSession(date, previous))}>
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-300">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-volt-500/15 text-volt-700 dark:text-volt-400">
             <Repeat size={19} />
           </div>
           <div className="min-w-0 flex-1">

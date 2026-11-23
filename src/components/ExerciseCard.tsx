@@ -117,8 +117,8 @@ export function ExerciseCard({ item, meta, index, count, unit, live, showRpe, pr
         </div>
         <div className="min-w-0 flex-1">
           <button type="button" className="group flex max-w-full items-center gap-1.5 text-left" onClick={() => meta && setShowGuide(true)} disabled={!meta} title="How to do it">
-            <h3 className="truncate text-base font-bold leading-tight tracking-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-300">{meta?.name ?? 'Unknown exercise'}</h3>
-            {meta && <Info size={14} className="shrink-0 text-zinc-300 transition group-hover:text-indigo-500 dark:text-zinc-600" />}
+            <h3 className="truncate text-base font-bold leading-tight tracking-tight group-hover:text-volt-700 dark:text-volt-400 dark:group-hover:text-volt-300">{meta?.name ?? 'Unknown exercise'}</h3>
+            {meta && <Info size={14} className="shrink-0 text-zinc-300 transition group-hover:text-volt-600 dark:text-zinc-600" />}
           </button>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
             <span className="font-semibold capitalize" style={{ color }}>
@@ -165,7 +165,7 @@ export function ExerciseCard({ item, meta, index, count, unit, live, showRpe, pr
             <span className="tabular"> — {summarizeSets(last.exercise.sets, fmt) || 'no sets'}</span>
           </span>
           {allEmpty && (
-            <button className="shrink-0 rounded-lg bg-indigo-500/10 px-2 py-1 font-bold text-indigo-600 hover:bg-indigo-500/20 dark:text-indigo-300" onClick={copyLast}>
+            <button className="shrink-0 rounded-lg bg-volt-500/15 px-2 py-1 font-bold text-volt-700 dark:text-volt-400 hover:bg-volt-500/20 dark:text-volt-300" onClick={copyLast}>
               Copy all
             </button>
           )}
@@ -194,7 +194,7 @@ export function ExerciseCard({ item, meta, index, count, unit, live, showRpe, pr
               <button
                 type="button"
                 onClick={switchUnit}
-                className="inline-flex items-center gap-1 rounded-md bg-indigo-500/10 px-1.5 py-0.5 font-extrabold text-indigo-600 transition hover:bg-indigo-500/20 dark:text-indigo-300"
+                className="inline-flex items-center gap-1 rounded-md bg-volt-500/15 px-1.5 py-0.5 font-extrabold text-volt-700 dark:text-volt-400 transition hover:bg-volt-500/20 dark:text-volt-300"
                 aria-label={`Weights in ${inputUnit}. Switch to ${otherUnit(inputUnit)}`}
                 title={`Switch to ${otherUnit(inputUnit)}`}
               >
@@ -233,7 +233,7 @@ export function ExerciseCard({ item, meta, index, count, unit, live, showRpe, pr
       )}
 
       <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 p-2 dark:border-white/[0.05]">
-        <button className="btn-ghost !py-2.5 text-indigo-600 dark:text-indigo-300" onClick={addSet}>
+        <button className="btn-ghost !py-2.5 link-accent" onClick={addSet}>
           <Plus size={16} strokeWidth={2.5} /> Add set
         </button>
         <button className="btn-ghost !py-2.5 text-zinc-500 dark:text-zinc-400" onClick={removeLastSet} disabled={item.sets.length === 0}>
@@ -358,7 +358,7 @@ function SetRow({ set, label, labelCls, prev, unit, live, showRpe, gridCols, prs
         <div role="cell" className="relative flex h-10 items-center justify-center">
           {prLabel && (
             <span
-              className="pointer-events-none absolute -right-1.5 -top-0.5 z-10 flex h-[18px] w-[18px] animate-pop items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-amber-950 shadow ring-2 ring-white dark:ring-zinc-900"
+              className="pointer-events-none absolute -right-1.5 -top-0.5 z-10 flex h-[18px] w-[18px] animate-pop items-center justify-center rounded-sm bg-amber-400 text-amber-950 shadow ring-2 ring-white dark:ring-zinc-900"
               title={prLabel}
             >
               <Trophy size={10} strokeWidth={2.75} />
@@ -382,7 +382,7 @@ function SetRow({ set, label, labelCls, prev, unit, live, showRpe, gridCols, prs
         </div>
         <div role="cell" className="flex h-10 min-w-0 items-center">
           <button
-            className="min-w-0 truncate rounded-md text-left text-[13px] font-medium text-zinc-400 tabular transition hover:text-indigo-600 disabled:hover:text-zinc-400 dark:text-zinc-500 dark:hover:text-indigo-300"
+            className="min-w-0 truncate rounded-md text-left text-[13px] font-medium text-zinc-400 tabular transition hover:text-volt-700 dark:text-volt-400 disabled:hover:text-zinc-400 dark:text-zinc-500 dark:hover:text-volt-300"
             disabled={!prev}
             onClick={() => prev && onPatch({ weight: prev.weight, reps: prev.reps })}
             title={prev ? 'Tap to copy' : undefined}
