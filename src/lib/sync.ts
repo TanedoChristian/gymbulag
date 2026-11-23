@@ -96,7 +96,8 @@ export interface SyncResult {
   removed: number;
 }
 
-async function syncTable(spec: Spec, out: SyncResult): Promise<void> {
+/** pushOnly: just upload this device's changes (skips the table when there are none, and doesn't page through downloads). */
+async function syncTable(spec: Spec, out: SyncResult, pushOnly = false): Promise<void> {
   const table = db.table(spec.name) as Table<any, string>;
   const state: SyncStateRow = (await db.syncState.get(spec.name)) ?? { table: spec.name, cursor: 0, hashes: {} };
   const hashes = { ...state.hashes };
@@ -107,6 +108,7 @@ async function syncTable(spec: Spec, out: SyncResult): Promise<void> {
   const queue = local.filter((r) => startHash.get(String(r[spec.key])) !== hashes[String(r[spec.key])]);
   const pending = new Set(queue.map((r) => String(r[spec.key])));
   const removed = Object.keys(hashes).filter((id) => !startHash.has(id));
+  if (pushOnly && !queue.length && !removed.length) return;
 
   let cursor = state.cursor;
   let first = true;
@@ -158,7 +160,7 @@ async function syncTable(spec: Spec, out: SyncResult): Promise<void> {
     more = res.more;
     // Save progress after every page so a dropped connection doesn't redo everything.
     await db.syncState.put({ table: spec.name, cursor, hashes });
-  } while (queue.length || more);
+  } while (queue.length || (more && !pushOnly));
 }
 
 export async function syncAll(): Promise<SyncResult> {
@@ -232,6 +234,35 @@ export function clearLastSync() {
     /* ignore */
   }
   setStatus({ lastSync: null, lastResult: undefined, error: undefined });
+}
+
+/**
+ * Upload what changed on this device, every table at once, without downloading the rest.
+ * Used when logging out (the device is cleared right after). False when it couldn't.
+ */
+export async function pushPending(): Promise<boolean> {
+  await waitForSync();
+  if (!isSignedIn()) return false;
+  const out: SyncResult = { pushed: 0, pulled: 0, removed: 0 };
+  const job = (async () => {
+    setStatus({ state: 'syncing' });
+    try {
+      await Promise.all(SPECS.map((spec) => syncTable(spec, out, true)));
+      setStatus({ state: 'idle', error: undefined });
+      return out;
+    } catch (e) {
+      setStatus({ state: 'error', error: e instanceof Error ? e.message : String(e) });
+      return null;
+    }
+  })();
+  // Background syncs wait for this instead of running alongside it.
+  running = job;
+  try {
+    return (await job) !== null;
+  } finally {
+    running = null;
+    again = false;
+  }
 }
 
 export async function runSync(): Promise<SyncResult | null> {

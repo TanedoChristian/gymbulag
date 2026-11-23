@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { db } from '../db';
 import { wipeAllData } from './repo';
 import { api, getAuth, setAuth, subscribeAuth, type AuthState, type User } from './api';
-import { clearLastSync, resetSyncState, runSync, waitForSync } from './sync';
+import { clearLastSync, pushPending, resetSyncState, waitForSync } from './sync';
 
 export type { User } from './api';
 import type { ProfileFields } from './profile';
@@ -111,11 +111,10 @@ export async function completeLogin(res: AuthResult, keepLocal: boolean): Promis
 export async function logOut({ force = false } = {}): Promise<boolean> {
   const auth = getAuth();
   if (!auth) return true;
-  if (!auth.expired && !force) {
-    const r = await runSync();
-    if (!r) return false;
-  }
-  await api('/auth/logout', {}).catch(() => {});
+  // Only this device's unsynced changes need uploading; everything else is already in the account.
+  if (!auth.expired && !force && !(await pushPending())) return false;
+  // End the session on the server without waiting for it: this device forgets the token either way.
+  void api('/auth/logout', {}, { token: auth.token }).catch(() => {});
   setAuth(null);
   await waitForSync();
   await wipeAllData();
