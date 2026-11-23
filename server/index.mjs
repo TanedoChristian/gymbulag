@@ -11,7 +11,8 @@ import { config, databaseLabel } from './config.mjs';
 import { createPool } from './db.mjs';
 import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
-import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateProfile } from './auth.mjs';
+import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateAvatar, updateProfile } from './auth.mjs';
+import { serveAvatar } from './profile.mjs';
 import { routeCommunity } from './community.mjs';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
@@ -211,6 +212,8 @@ export function createHandler(pool) {
       if (url.pathname === '/api/health' && req.method === 'GET') {
         return send(res, 200, { ok: true, app: 'gymbulag', accounts: true, signupCode: !!config.signupCode });
       }
+      const avatar = url.pathname.match(/^\/api\/avatars\/([^/]+)$/);
+      if (avatar && req.method === 'GET') return await serveAvatar(pool, avatar[1], res);
       if (url.pathname === '/api/auth/register' && req.method === 'POST') return send(res, 201, await register(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/auth/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/admin/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req), { adminOnly: true }));
@@ -223,6 +226,7 @@ export function createHandler(pool) {
         return send(res, 200, { user: auth.user, database: databaseLabel(), counts: await counts(pool, userId) });
       }
       if (url.pathname === '/api/auth/logout' && req.method === 'POST') return send(res, 200, await logout(pool, auth));
+      if (url.pathname === '/api/auth/avatar' && req.method === 'POST') return send(res, 200, await updateAvatar(pool, auth, await readJson(req)));
       if (url.pathname === '/api/auth/profile' && req.method === 'POST') return send(res, 200, await updateProfile(pool, auth, await readJson(req)));
       if (url.pathname === '/api/admin/session' && req.method === 'POST') return send(res, 200, await adminSessionFromApp(pool, auth, clientInfo(req)));
       if (url.pathname === '/api/auth/password' && req.method === 'POST') return send(res, 200, await changePassword(pool, auth, await readJson(req)));

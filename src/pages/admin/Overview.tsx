@@ -159,7 +159,7 @@ export default function Overview() {
                 <Tr key={u.id} onClick={() => navigate(`/admin/users?user=${u.id}`)}>
                   <Td>
                     <div className="flex items-center gap-2.5">
-                      <Avatar name={u.name || u.email} size="sm" />
+                      <Avatar name={u.name || u.email} avatarKey={u.avatarKey} size="sm" />
                       <div className="min-w-0">
                         <div className="truncate font-semibold">{u.name || '—'}</div>
                         <div className="truncate text-xs text-steel-mute dark:text-floor-mute">{u.email}</div>

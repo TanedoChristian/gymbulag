@@ -4,8 +4,10 @@ import { Ban, CircleOff, KeyRound, Loader2, LogOut, MonitorSmartphone, MoreHoriz
 import { TabBar } from '../../components/ui';
 import { Menu } from '../../components/Menu';
 import { useToast } from '../../context/Toast';
-import { describeDevice, getUser, REASON_LABEL, signOutUser, updateUser, type AdminUser, type UserDetail } from '../../lib/admin';
+import { describeDevice, getUser, REASON_LABEL, setUserAvatar, signOutUser, updateUser, type AdminUser, type UserDetail } from '../../lib/admin';
 import { Avatar, Badge, Drawer, ErrorBlock, Field, LoadingBlock } from './kit';
+import { AvatarPicker } from '../../components/AvatarPicker';
+import { BIO_MAX, EXPERIENCE_OPTIONS, GENDER_OPTIONS, GOAL_OPTIONS, labelOf, type Experience, type FitnessGoal, type Gender } from '../../lib/profile';
 import { RoleBadge, StatusBadge, type useUserActions } from './userActions';
 
 type Tab = 'profile' | 'activity' | 'devices' | 'gyms';
@@ -59,10 +61,11 @@ export function UserDrawer({
         <>
           <header className="border-b border-steel/10 px-5 pb-4 pt-5 dark:border-white/[0.06]">
             <div className="flex items-start gap-4 pr-10">
-              <Avatar name={u.name || u.email} size="lg" />
+              <Avatar name={u.name || u.email} avatarKey={u.avatarKey} size="lg" />
               <div className="min-w-0 flex-1">
                 <h2 className="truncate font-display text-2xl font-bold leading-tight tracking-wide">{u.name || '—'}</h2>
                 <p className="truncate text-sm text-steel-mute dark:text-floor-mute">{u.email}</p>
+                {u.bio && <p className="mt-1 line-clamp-2 text-xs italic text-steel-mute dark:text-floor-mute">“{u.bio}”</p>}
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <RoleBadge user={u} />
                   <StatusBadge status={u.status} />
@@ -138,22 +141,29 @@ export function UserDrawer({
 function ProfileTab({ data, onSaved }: { data: UserDetail; onSaved: (u: AdminUser) => void }) {
   const toast = useToast();
   const u = data.user;
-  const [name, setName] = useState(u.name);
-  const [email, setEmail] = useState(u.email);
-  const [birthDate, setBirthDate] = useState(u.birthDate);
+  const initial = () => ({
+    name: u.name,
+    email: u.email,
+    birthDate: u.birthDate,
+    phone: u.phone,
+    gender: u.gender as Gender,
+    city: u.city,
+    fitnessGoal: u.fitnessGoal as FitnessGoal,
+    experience: u.experience as Experience,
+    bio: u.bio,
+  });
+  const [form, setForm] = useState(initial);
   const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    setName(u.name);
-    setEmail(u.email);
-    setBirthDate(u.birthDate);
-  }, [u]);
-  const dirty = name !== u.name || email !== u.email || birthDate !== u.birthDate;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => setForm(initial()), [u]);
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const dirty = (Object.keys(form) as (keyof typeof form)[]).some((k) => form[k] !== initial()[k]);
 
   const save = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     try {
-      onSaved(await updateUser(u.id, { name, email, birthDate }));
+      onSaved(await updateUser(u.id, form));
       toast('Profile saved', { tone: 'success' });
     } catch (err) {
       toast((err as Error).message, { tone: 'error' });
@@ -162,25 +172,59 @@ function ProfileTab({ data, onSaved }: { data: UserDetail; onSaved: (u: AdminUse
     }
   };
 
+  const select = <T extends string>(label: string, key: 'gender' | 'fitnessGoal' | 'experience', options: { value: T; label: string }[]) => (
+    <label className="block">
+      <span className="label">{label}</span>
+      <select className="input" value={form[key]} onChange={(e) => set(key, e.target.value as never)}>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
   return (
     <div className="space-y-5">
+      <div className="card p-4">
+        <AvatarPicker size="lg" name={u.name || u.email} avatarKey={u.avatarKey} onUpload={async (img) => onSaved(await setUserAvatar(u.id, img))} onRemove={async () => onSaved(await setUserAvatar(u.id, null))} />
+      </div>
+
       <form onSubmit={save} className="card space-y-3 p-4">
         <h3 className="text-sm font-bold">Edit profile</h3>
         <label className="block">
           <span className="label">Name</span>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} required />
+          <input className="input" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={100} required />
         </label>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="label">Email</span>
+            <input className="input" type="email" value={form.email} onChange={(e) => set('email', e.target.value)} maxLength={254} required />
+          </label>
+          <label className="block">
+            <span className="label">Phone</span>
+            <input className="input" type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} maxLength={30} />
+          </label>
+          <label className="block">
+            <span className="label">Date of birth</span>
+            <input className="input" type="date" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} required />
+          </label>
+          {select('Gender', 'gender', GENDER_OPTIONS)}
+          <label className="block">
+            <span className="label">City</span>
+            <input className="input" value={form.city} onChange={(e) => set('city', e.target.value)} maxLength={100} />
+          </label>
+          {select('Main goal', 'fitnessGoal', GOAL_OPTIONS)}
+          {select('Experience', 'experience', EXPERIENCE_OPTIONS)}
+        </div>
         <label className="block">
-          <span className="label">Email</span>
-          <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={254} required />
-        </label>
-        <label className="block">
-          <span className="label">Date of birth</span>
-          <input className="input" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required />
+          <span className="label">Bio</span>
+          <textarea className="input min-h-[4rem] resize-y" value={form.bio} onChange={(e) => set('bio', e.target.value)} maxLength={BIO_MAX} rows={2} />
         </label>
         <div className="flex justify-end gap-2">
           {dirty && (
-            <button type="button" className="btn-ghost" onClick={() => (setName(u.name), setEmail(u.email), setBirthDate(u.birthDate))}>
+            <button type="button" className="btn-ghost" onClick={() => setForm(initial())}>
               Cancel
             </button>
           )}
@@ -192,6 +236,11 @@ function ProfileTab({ data, onSaved }: { data: UserDetail; onSaved: (u: AdminUse
 
       <dl className="divide-y divide-steel/10 dark:divide-white/[0.06]">
         <Field label="User ID">#{u.id}</Field>
+        <Field label="Phone">{u.phone ? <a className="link-accent" href={`tel:${u.phone}`}>{u.phone}</a> : '—'}</Field>
+        <Field label="Gender">{u.gender ? labelOf(GENDER_OPTIONS, u.gender as Gender) : '—'}</Field>
+        <Field label="City">{u.city || '—'}</Field>
+        <Field label="Goal">{u.fitnessGoal ? labelOf(GOAL_OPTIONS, u.fitnessGoal as FitnessGoal) : '—'}</Field>
+        <Field label="Experience">{u.experience ? labelOf(EXPERIENCE_OPTIONS, u.experience as Experience) : '—'}</Field>
         <Field label="Joined">{format(u.createdAt, 'd MMM yyyy, HH:mm')}</Field>
         <Field label="Last active">{u.lastSeen ? formatDistanceToNow(u.lastSeen, { addSuffix: true }) : 'Not signed in'}</Field>
         <Field label="Status changed">{u.statusChangedAt ? format(u.statusChangedAt, 'd MMM yyyy, HH:mm') : '—'}</Field>

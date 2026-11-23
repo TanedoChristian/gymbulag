@@ -6,6 +6,7 @@ import { api, getAuth, setAuth, subscribeAuth, type AuthState, type User } from 
 import { clearLastSync, resetSyncState, runSync, waitForSync } from './sync';
 
 export type { User } from './api';
+import type { ProfileFields } from './profile';
 
 const OWNER_KEY = 'gymbulag:owner';
 
@@ -123,8 +124,16 @@ export async function logOut({ force = false } = {}): Promise<boolean> {
   return true;
 }
 
-export async function updateProfile(patch: { name?: string; birthDate?: string }): Promise<User> {
+export async function updateProfile(patch: { name?: string; birthDate?: string } & Partial<ProfileFields>): Promise<User> {
   const { user } = await api<{ user: User }>('/auth/profile', patch);
+  const cur = getAuth();
+  if (cur) setAuth({ ...cur, user });
+  return user;
+}
+
+/** Set (data: URL) or remove (null) your profile picture. */
+export async function setMyAvatar(image: string | null): Promise<User> {
+  const { user } = await api<{ user: User }>('/auth/avatar', { image });
   const cur = getAuth();
   if (cur) setAuth({ ...cur, user });
   return user;

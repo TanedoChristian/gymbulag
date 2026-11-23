@@ -175,7 +175,7 @@ async function communityMembers(pool, auth, communityId) {
   await requireManager(pool, auth, communityId);
   const community = await loadCommunity(pool, communityId);
   const { rows } = await pool.query(
-    `SELECT m.user_id, m.status, m.joined_at, m.blocked_at, u.name, u.email, u.status AS account_status,
+    `SELECT m.user_id, m.status, m.joined_at, m.blocked_at, u.name, u.email, u.avatar_key, u.status AS account_status,
        (SELECT MAX(t.last_used_at) FROM auth_tokens t WHERE t.user_id = u.id) AS last_seen,
        (SELECT COUNT(*) FROM sessions s WHERE s.user_id = u.id AND s.deleted = 0 AND s.date >= $2) AS sessions30,
        (SELECT MAX(s.date) FROM sessions s WHERE s.user_id = u.id AND s.deleted = 0) AS last_workout
@@ -190,6 +190,7 @@ async function communityMembers(pool, auth, communityId) {
       userId: Number(r.user_id),
       name: r.name,
       email: r.email,
+      avatarKey: r.avatar_key ?? null,
       status: r.status,
       accountStatus: r.account_status,
       joinedAt: Number(r.joined_at),

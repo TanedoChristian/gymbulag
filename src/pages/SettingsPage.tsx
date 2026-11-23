@@ -12,7 +12,10 @@ import { Modal, NumberField, PageHeader, Segmented, Toggle } from '../components
 import { useToast } from '../context/Toast';
 import { useConfirm } from '../context/Confirm';
 import { fetchMe, getSyncStatus, runSync, subscribeSync, type ServerInfo } from '../lib/sync';
-import { ageFromBirthDate, changePassword, logOut, updateProfile, useAuth } from '../lib/auth';
+import { ageFromBirthDate, changePassword, logOut, setMyAvatar, updateProfile, useAuth } from '../lib/auth';
+import { UserAvatar } from '../components/UserAvatar';
+import { AvatarPicker } from '../components/AvatarPicker';
+import { BIO_MAX, EXPERIENCE_OPTIONS, GENDER_OPTIONS, GOAL_OPTIONS, labelOf, type Experience, type FitnessGoal, type Gender } from '../lib/profile';
 import { TdeeCalculator } from '../components/TdeeCalculator';
 import { fmtKcal } from '../lib/food';
 
@@ -142,13 +145,16 @@ function AccountGroup() {
   return (
     <Group title="Account">
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-volt-500 font-display text-lg font-bold text-volt-ink">{(user.name || user.email).charAt(0).toUpperCase()}</span>
+        <UserAvatar name={user.name || user.email} avatarKey={user.avatarKey} size="md" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-bold">{user.name}</div>
           <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">
             {user.email}
             {age != null && ` · ${age} years old`}
           </div>
+          {(user.city || user.fitnessGoal) && (
+            <div className="truncate text-xs text-zinc-500 dark:text-zinc-400">{[user.city, labelOf(GOAL_OPTIONS, user.fitnessGoal)].filter(Boolean).join(' · ')}</div>
+          )}
         </div>
         <button className="btn-secondary !px-3 !py-2 text-xs" onClick={() => setEditing('profile')}>
           <UserRound size={13} /> Edit
@@ -190,8 +196,15 @@ function AccountGroup() {
 function ProfileForm({ onDone }: { onDone: () => void }) {
   const auth = useAuth()!;
   const toast = useToast();
-  const [name, setName] = useState(auth.user.name);
-  const [birthDate, setBirthDate] = useState(auth.user.birthDate);
+  const u = auth.user;
+  const [name, setName] = useState(u.name);
+  const [birthDate, setBirthDate] = useState(u.birthDate);
+  const [phone, setPhone] = useState(u.phone ?? '');
+  const [gender, setGender] = useState<Gender>(u.gender ?? '');
+  const [city, setCity] = useState(u.city ?? '');
+  const [fitnessGoal, setFitnessGoal] = useState<FitnessGoal>(u.fitnessGoal ?? '');
+  const [experience, setExperience] = useState<Experience>(u.experience ?? '');
+  const [bio, setBio] = useState(u.bio ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const age = ageFromBirthDate(birthDate);
@@ -200,7 +213,7 @@ function ProfileForm({ onDone }: { onDone: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await updateProfile({ name, birthDate });
+      await updateProfile({ name, birthDate, phone, gender, city, fitnessGoal, experience, bio });
       toast('Profile saved', { tone: 'success' });
       onDone();
     } catch (err) {
@@ -210,20 +223,73 @@ function ProfileForm({ onDone }: { onDone: () => void }) {
   };
   return (
     <form className="space-y-3" onSubmit={save}>
+      <AvatarPicker name={u.name || u.email} avatarKey={u.avatarKey} onUpload={(img) => setMyAvatar(img)} onRemove={() => setMyAvatar(null)} />
       <label className="block">
         <span className="label">Name</span>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} required maxLength={100} />
       </label>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="label">Date of birth</span>
+          <input className="input" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required max={format(subYears(new Date(), 13), 'yyyy-MM-dd')} />
+          {age != null && <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400">You're {age}.</span>}
+        </label>
+        <label className="block">
+          <span className="label">Gender</span>
+          <select className="input" value={gender} onChange={(e) => setGender(e.target.value as Gender)}>
+            {GENDER_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="label">Phone (optional)</span>
+          <input className="input" type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={30} placeholder="+63 912 345 6789" />
+        </label>
+        <label className="block">
+          <span className="label">City (optional)</span>
+          <input className="input" autoComplete="address-level2" value={city} onChange={(e) => setCity(e.target.value)} maxLength={100} />
+        </label>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="label">Main goal</span>
+          <select className="input" value={fitnessGoal} onChange={(e) => setFitnessGoal(e.target.value as FitnessGoal)}>
+            {GOAL_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className="label">Experience</span>
+          <select className="input" value={experience} onChange={(e) => setExperience(e.target.value as Experience)}>
+            {EXPERIENCE_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <label className="block">
-        <span className="label">Date of birth</span>
-        <input className="input" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} required max={format(subYears(new Date(), 13), 'yyyy-MM-dd')} />
-        {age != null && <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400">You're {age}.</span>}
+        <span className="label">About you (optional)</span>
+        <textarea className="input min-h-[4.5rem] resize-y" value={bio} onChange={(e) => setBio(e.target.value)} maxLength={BIO_MAX} rows={3} placeholder="Training for my first powerlifting meet…" />
+        <span className="mt-1 block text-right text-[11px] text-zinc-500 dark:text-zinc-400">
+          {bio.length}/{BIO_MAX}
+        </span>
       </label>
       <label className="block">
         <span className="label">Email</span>
-        <input className="input" value={auth.user.email} readOnly disabled />
+        <input className="input" value={u.email} readOnly disabled />
         <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400">Your email is your login and can't be changed here.</span>
       </label>
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Gyms you join see your name, email and picture. Your phone and other details are only visible to Gymbulag admins.</p>
       {error && <p className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       <button className="btn-primary w-full" disabled={busy}>
         {busy && <Loader2 size={16} className="animate-spin" />} Save

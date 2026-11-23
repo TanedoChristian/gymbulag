@@ -65,7 +65,7 @@ function AdminLogin() {
         {appAdmin && (
           <>
             <button className="btn-primary w-full" onClick={continueAsApp} disabled={!!busy}>
-              {busy === 'app' ? <Loader2 size={16} className="animate-spin" /> : <Avatar name={appAdmin.name || appAdmin.email} size="sm" />}
+              {busy === 'app' ? <Loader2 size={16} className="animate-spin" /> : <Avatar name={appAdmin.name || appAdmin.email} avatarKey={appAdmin.avatarKey} size="sm" />}
               Continue as {appAdmin.name || appAdmin.email}
             </button>
             <div className="flex items-center gap-3 text-xs text-steel-mute dark:text-floor-mute">
@@ -141,7 +141,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </Link>
       </nav>
       <div className="mt-4 flex items-center gap-2.5 rounded-lg bg-white/[0.04] p-2.5">
-        <Avatar name={session.user.name || session.user.email} size="sm" />
+        <Avatar name={session.user.name || session.user.email} avatarKey={session.user.avatarKey} size="sm" />
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-white">{session.user.name || 'Admin'}</div>
           <div className="truncate text-[11px] text-floor-mute">{session.user.email}</div>

@@ -138,7 +138,7 @@ export default function Users() {
                 <Tr key={u.id} onClick={() => open(u.id)} dim={u.status !== 'active'}>
                   <Td>
                     <div className="flex items-center gap-3">
-                      <Avatar name={u.name || u.email} />
+                      <Avatar name={u.name || u.email} avatarKey={u.avatarKey} />
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 truncate font-semibold">
                           {u.name || '—'} {u.id === me?.id && <Badge>You</Badge>}

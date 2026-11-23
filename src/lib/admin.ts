@@ -1,10 +1,11 @@
 /* Admin panel API: overview, accounts and login activity. Community management is in community.ts. */
 import { adminApi } from './adminAuth';
 import type { AccountStatus } from './community';
+import type { ProfileFields } from './profile';
 
 export type Role = 'user' | 'admin';
 
-export interface AdminUser {
+export interface AdminUser extends ProfileFields {
   id: number;
   email: string;
   name: string;
@@ -24,6 +25,7 @@ export interface AdminUser {
   owned: number;
   /** Signed-in devices. */
   devices: number;
+  avatarKey: string | null;
 }
 
 export interface LoginEvent {
@@ -67,8 +69,9 @@ export interface Overview {
 export const getOverview = () => adminApi<Overview>('/admin/overview');
 export const listUsers = () => adminApi<{ users: AdminUser[] }>('/admin/users').then((r) => r.users);
 export const getUser = (id: number) => adminApi<UserDetail>(`/admin/users/${id}`);
-export const updateUser = (userId: number, patch: { name?: string; email?: string; birthDate?: string }) =>
+export const updateUser = (userId: number, patch: { name?: string; email?: string; birthDate?: string } & Partial<ProfileFields>) =>
   adminApi<{ user: AdminUser }>('/admin/users/update', { userId, ...patch }).then((r) => r.user);
+export const setUserAvatar = (userId: number, image: string | null) => adminApi<{ user: AdminUser }>('/admin/users/avatar', { userId, image }).then((r) => r.user);
 export const setRole = (userId: number, role: Role) => adminApi<{ user: AdminUser }>('/admin/users/role', { userId, role }).then((r) => r.user);
 export const setStatus = (userId: number, status: AccountStatus) => adminApi<{ user: AdminUser }>('/admin/users/status', { userId, status }).then((r) => r.user);
 export const resetPassword = (userId: number, password: string) => adminApi<{ ok: true; signedOut: number }>('/admin/users/password', { userId, password });

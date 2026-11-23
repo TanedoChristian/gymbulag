@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { config } from './config.mjs';
 import { TABLES } from './sync.mjs';
 import { dialect, isDuplicate, lockUsers, transaction } from './db.mjs';
+import { checkProfile, profileOut, PROFILE_COLUMNS, saveAvatar, saveProfile } from './profile.mjs';
 
 const scrypt = promisify(scryptCb);
 const SCRYPT = { N: 16384, r: 8, p: 1 };
@@ -116,7 +117,8 @@ export async function issueToken(pool, userId, device) {
 export const isAdminRow = (row) => row.role === 'admin' || config.adminEmails.includes(String(row.email).toLowerCase());
 
 /** Columns for loading a user: everything plus how many communities they own. */
-export const USER_COLUMNS = 'u.*, (SELECT COUNT(*) FROM community_owners o WHERE o.user_id = u.id) AS owned';
+export const USER_COLUMNS = `u.id, u.email, u.password_hash, u.name, u.birth_date, u.created_at, u.updated_at, u.role, u.status, u.status_changed_at, ${PROFILE_COLUMNS},
+  (SELECT COUNT(*) FROM community_owners o WHERE o.user_id = u.id) AS owned`;
 
 function publicUser(row) {
   return {
@@ -127,6 +129,7 @@ function publicUser(row) {
     createdAt: Number(row.created_at),
     role: isAdminRow(row) ? 'admin' : 'user',
     isOwner: Number(row.owned ?? 0) > 0,
+    ...profileOut(row),
   };
 }
 
@@ -257,7 +260,17 @@ export async function logout(pool, auth) {
 export async function updateProfile(pool, auth, body) {
   const name = body.name === undefined ? auth.user.name : checkName(body.name);
   const birthDate = body.birthDate === undefined ? auth.user.birthDate : checkBirthDate(body.birthDate);
+  const cur = await loadUser(pool, auth.user.id);
+  const profile = checkProfile(body, cur);
   await pool.query('UPDATE users SET name = $1, birth_date = $2, updated_at = $3 WHERE id = $4', [name, birthDate, Date.now(), auth.user.id]);
+  await saveProfile(pool, auth.user.id, profile);
+  return { user: publicUser(await loadUser(pool, auth.user.id)) };
+}
+
+/** Set or remove your own profile picture. body.image: a data: URL, or null to remove. */
+export async function updateAvatar(pool, auth, body) {
+  limit(`avatar:${auth.user.id}`, 20, 15 * 60_000, 'Too many picture changes.');
+  await saveAvatar(pool, auth.user.id, body.image ?? null);
   return { user: publicUser(await loadUser(pool, auth.user.id)) };
 }
 

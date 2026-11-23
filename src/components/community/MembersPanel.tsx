@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { Ban, CalendarCheck, Loader2, MoreVertical, Search, ShieldCheck, UserPlus, Users } from 'lucide-react';
 import { Menu } from '../Menu';
+import { UserAvatar } from '../UserAvatar';
 import { EmptyState, Segmented, StatTile } from '../ui';
 import { useToast } from '../../context/Toast';
 import { useConfirm } from '../../context/Confirm';
@@ -116,7 +117,7 @@ export function MembersPanel({ communityId, onChanged, asAdmin = false }: { comm
         <ul className="card divide-y divide-zinc-100 dark:divide-zinc-800">
           {shown.map((m) => (
             <li key={m.userId} className="flex items-center gap-3 px-4 py-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 font-display text-sm font-bold uppercase dark:bg-zinc-800">{(m.name || m.email).slice(0, 1)}</div>
+              <UserAvatar name={m.name || m.email} avatarKey={m.avatarKey} />
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <span className="truncate text-sm font-semibold">{m.name || '—'}</span>

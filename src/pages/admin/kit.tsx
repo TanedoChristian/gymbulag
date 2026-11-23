@@ -1,6 +1,7 @@
 /* Building blocks for the admin panel: page titles, data tables, badges, drawer, pagination. */
 import { useEffect, useMemo, useRef, useState, type ReactNode, type ThHTMLAttributes } from 'react';
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Loader2, Search, X } from 'lucide-react';
+import { UserAvatar } from '../../components/UserAvatar';
 
 export function PageTitle({ title, desc, actions }: { title: string; desc?: ReactNode; actions?: ReactNode }) {
   return (
@@ -49,17 +50,8 @@ export function Badge({ tone = 'gray', children, title, dot }: { tone?: Tone; ch
   );
 }
 
-export function Avatar({ name, size = 'md' }: { name: string; size?: 'sm' | 'md' | 'lg' }) {
-  const initials =
-    name
-      .split(/[\s@._-]+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((w) => w[0])
-      .join('')
-      .toUpperCase() || '?';
-  const dims = size === 'lg' ? 'h-14 w-14 text-lg' : size === 'sm' ? 'h-7 w-7 text-[11px]' : 'h-9 w-9 text-xs';
-  return <span className={`flex shrink-0 items-center justify-center rounded-full bg-rack font-display font-bold text-volt-500 ${dims}`}>{initials}</span>;
+export function Avatar({ name, avatarKey, size = 'md' }: { name: string; avatarKey?: string | null; size?: 'sm' | 'md' | 'lg' }) {
+  return <UserAvatar name={name} avatarKey={avatarKey} size={size === 'sm' ? 'xs' : size === 'md' ? 'sm' : 'lg'} />;
 }
 
 /* ----------------------------------------------------------------- tables */

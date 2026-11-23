@@ -3,6 +3,7 @@
 import { config } from './config.mjs';
 import { AuthError, checkBirthDate, checkEmail, checkName, checkPassword, hashPassword, isAdminRow, normalizeEmail } from './auth.mjs';
 import { isDuplicate } from './db.mjs';
+import { checkProfile, profileOut, PROFILE_COLUMNS, saveAvatar, saveProfile } from './profile.mjs';
 
 const ACCOUNT_STATUSES = ['active', 'inactive', 'blocked'];
 const ROLES = ['user', 'admin'];
@@ -40,10 +41,11 @@ function userOut(r) {
     communities: Number(r.communities ?? 0),
     owned: Number(r.owned ?? 0),
     devices: Number(r.devices ?? 0),
+    ...profileOut(r),
   };
 }
 
-const USER_LIST_COLUMNS = `u.id, u.email, u.name, u.birth_date, u.role, u.status, u.created_at, u.updated_at, u.status_changed_at,
+const USER_LIST_COLUMNS = `u.id, u.email, u.name, u.birth_date, u.role, u.status, u.created_at, u.updated_at, u.status_changed_at, ${PROFILE_COLUMNS},
   (SELECT MAX(t.last_used_at) FROM auth_tokens t WHERE t.user_id = u.id) AS last_seen,
   (SELECT COUNT(*) FROM auth_tokens t WHERE t.user_id = u.id) AS devices,
   (SELECT COUNT(*) FROM community_members m WHERE m.user_id = u.id AND m.status = 'active') AS communities,
@@ -173,8 +175,10 @@ async function updateUser(pool, body) {
     email = normalizeEmail(body.email);
     checkEmail(email);
   }
+  const profile = checkProfile(body, cur);
   try {
     await pool.query('UPDATE users SET name = $1, email = $2, birth_date = $3, updated_at = $4 WHERE id = $5', [name, email, birthDate, Date.now(), id]);
+    await saveProfile(pool, id, profile);
   } catch (e) {
     if (isDuplicate(e)) fail(409, 'Another account already uses that email');
     throw e;
@@ -275,6 +279,13 @@ export async function routeAdmin(pool, auth, req, url, body) {
   const detail = p.match(/^\/api\/admin\/users\/(\d+)$/);
   if (detail && get) return userDetail(pool, checkId(detail[1], 'user'));
   if (p === '/api/admin/users/update' && post) return updateUser(pool, await body());
+  if (p === '/api/admin/users/avatar' && post) {
+    const b = await body();
+    const id = checkId(b.userId, 'user');
+    await loadUserRow(pool, id);
+    await saveAvatar(pool, id, b.image ?? null);
+    return { user: userOut(await loadUserRow(pool, id)) };
+  }
   if (p === '/api/admin/users/role' && post) return setRole(pool, auth, await body());
   if (p === '/api/admin/users/status' && post) return setStatus(pool, auth, await body());
   if (p === '/api/admin/users/password' && post) return resetPassword(pool, auth, await body());

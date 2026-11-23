@@ -1,6 +1,7 @@
 /* Talking to the Gymbulag server: where it is, who is logged in, and one fetch helper. */
+import type { ProfileFields } from './profile';
 
-export interface User {
+export interface User extends Partial<ProfileFields> {
   id: number;
   email: string;
   name: string;
@@ -11,6 +12,8 @@ export interface User {
   role?: 'user' | 'admin';
   /** Was given access to at least one gym community's dashboard. */
   isOwner?: boolean;
+  /** Profile picture id (see avatarSrc); null = no picture. */
+  avatarKey?: string | null;
 }
 
 export interface AuthState {

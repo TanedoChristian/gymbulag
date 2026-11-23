@@ -30,6 +30,7 @@ export interface Member {
   userId: number;
   name: string;
   email: string;
+  avatarKey: string | null;
   status: MemberStatus;
   accountStatus: AccountStatus;
   joinedAt: number;
