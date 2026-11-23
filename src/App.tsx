@@ -19,6 +19,7 @@ const AuthPage = lazy(() => import('./pages/AuthPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const GymPage = lazy(() => import('./pages/GymPage'));
 const JoinPage = lazy(() => import('./pages/JoinPage'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
 
 function useThemeSync() {
   const { theme } = useSettings();
@@ -55,6 +56,14 @@ export default function App() {
     return (
       <Suspense fallback={<Spinner />}>
         <AdminPage />
+      </Suspense>
+    );
+  }
+  // Public pages: the privacy policy and deletion instructions Google / Facebook link to.
+  if (pathname === '/privacy' || pathname === '/data-deletion') {
+    return (
+      <Suspense fallback={<Spinner />}>
+        <LegalPage page={pathname === '/privacy' ? 'privacy' : 'data-deletion'} />
       </Suspense>
     );
   }

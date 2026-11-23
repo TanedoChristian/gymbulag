@@ -14,6 +14,8 @@ export interface User extends Partial<ProfileFields> {
   isOwner?: boolean;
   /** Profile picture id (see avatarSrc); null = no picture. */
   avatarKey?: string | null;
+  /** False for Google / Facebook accounts that haven't set a password. Missing on old logins. */
+  hasPassword?: boolean;
 }
 
 export interface AuthState {

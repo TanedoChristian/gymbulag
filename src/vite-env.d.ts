@@ -2,3 +2,4 @@
 /// <reference types="vite-plugin-pwa/react" />
 declare const __APP_VERSION__: string;
 declare const __SHOW_USER_DATA__: boolean;
+declare const __CONTACT_EMAIL__: string;

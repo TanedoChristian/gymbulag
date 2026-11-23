@@ -159,9 +159,9 @@ function AccountGroup() {
           </span>
         </div>
       )}
-      <Row title="Password">
+      <Row title="Password" desc={auth?.user.hasPassword === false ? 'You sign in with Google or Facebook. Add a password to also log in with your email.' : undefined}>
         <button className="btn-secondary !py-2" onClick={() => setEditing('password')}>
-          <KeyRound size={15} /> Change
+          <KeyRound size={15} /> {auth?.user.hasPassword === false ? 'Set' : 'Change'}
         </button>
       </Row>
       <Row title="Log out" desc="Removes your data from this device. It stays in your account.">
@@ -172,8 +172,8 @@ function AccountGroup() {
       <Modal open={editing === 'profile'} onClose={() => setEditing(null)} title="Your profile" size="sm">
         {editing === 'profile' && <ProfileForm onDone={() => setEditing(null)} />}
       </Modal>
-      <Modal open={editing === 'password'} onClose={() => setEditing(null)} title="Change password" size="sm">
-        {editing === 'password' && <PasswordForm onDone={() => setEditing(null)} />}
+      <Modal open={editing === 'password'} onClose={() => setEditing(null)} title={auth?.user.hasPassword === false ? 'Set a password' : 'Change password'} size="sm">
+        {editing === 'password' && <PasswordForm hasPassword={auth?.user.hasPassword !== false} onDone={() => setEditing(null)} />}
       </Modal>
     </Group>
   );
@@ -284,7 +284,7 @@ function ProfileForm({ onDone }: { onDone: () => void }) {
   );
 }
 
-function PasswordForm({ onDone }: { onDone: () => void }) {
+function PasswordForm({ hasPassword, onDone }: { hasPassword: boolean; onDone: () => void }) {
   const toast = useToast();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
@@ -296,7 +296,9 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
     setError(null);
     try {
       const r = await changePassword(current, next);
-      toast(r.otherDevicesLoggedOut ? `Password changed. ${plural(r.otherDevicesLoggedOut, 'other device')} logged out.` : 'Password changed', { tone: 'success' });
+      const done = hasPassword ? 'Password changed' : 'Password set';
+      toast(r.otherDevicesLoggedOut ? `${done}. ${plural(r.otherDevicesLoggedOut, 'other device')} logged out.` : done, { tone: 'success' });
+      if (!hasPassword) await fetchMe().catch(() => {});
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not change password');
@@ -305,10 +307,12 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
   };
   return (
     <form className="space-y-3" onSubmit={save}>
-      <label className="block">
-        <span className="label">Current password</span>
-        <input className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
-      </label>
+      {hasPassword && (
+        <label className="block">
+          <span className="label">Current password</span>
+          <input className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
+        </label>
+      )}
       <label className="block">
         <span className="label">New password</span>
         <input className="input" type="password" autoComplete="new-password" value={next} onChange={(e) => setNext(e.target.value)} required minLength={8} />
@@ -316,7 +320,7 @@ function PasswordForm({ onDone }: { onDone: () => void }) {
       </label>
       {error && <p className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       <button className="btn-primary w-full" disabled={busy}>
-        {busy && <Loader2 size={16} className="animate-spin" />} Change password
+        {busy && <Loader2 size={16} className="animate-spin" />} {hasPassword ? 'Change password' : 'Set password'}
       </button>
     </form>
   );

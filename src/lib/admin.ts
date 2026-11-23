@@ -99,6 +99,10 @@ export const STATUS_LABEL: Record<AccountStatus, string> = { active: 'Active', i
 export const REASON_LABEL: Record<string, string> = {
   ok: 'Signed in',
   signup: 'Signed up',
+  google: 'Signed in with Google',
+  facebook: 'Signed in with Facebook',
+  signup_google: 'Signed up with Google',
+  signup_facebook: 'Signed up with Facebook',
   from_app: 'Opened from app',
   wrong_password: 'Wrong password',
   unknown_email: 'Unknown email',

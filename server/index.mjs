@@ -11,7 +11,8 @@ import { config, databaseLabel } from './config.mjs';
 import { createPool } from './db.mjs';
 import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
-import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateAvatar, updateProfile } from './auth.mjs';
+import { AuthError, adminSessionFromApp, changePassword, login, logout, oauthLogin, register, requireUser, updateAvatar, updateProfile } from './auth.mjs';
+import { oauthProviders } from './oauth.mjs';
 import { serveAvatar } from './profile.mjs';
 import { routeCommunity, serveCover } from './community.mjs';
 import { routeFeed, serveMedia } from './feed.mjs';
@@ -211,7 +212,7 @@ export function createHandler(pool) {
       if (req.method === 'OPTIONS') return res.writeHead(204).end();
 
       if (url.pathname === '/api/health' && req.method === 'GET') {
-        return send(res, 200, { ok: true, app: 'gymbulag', accounts: true, signupCode: !!config.signupCode });
+        return send(res, 200, { ok: true, app: 'gymbulag', accounts: true, signupCode: !!config.signupCode, oauth: oauthProviders() });
       }
       const avatar = url.pathname.match(/^\/api\/avatars\/([^/]+)$/);
       if (avatar && req.method === 'GET') return await serveAvatar(pool, avatar[1], res);
@@ -221,6 +222,7 @@ export function createHandler(pool) {
       if (cover && req.method === 'GET') return await serveCover(pool, cover[1], res);
       if (url.pathname === '/api/auth/register' && req.method === 'POST') return send(res, 201, await register(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/auth/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req)));
+      if (url.pathname === '/api/auth/oauth' && req.method === 'POST') return send(res, 200, await oauthLogin(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/admin/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req), { adminOnly: true }));
 
       // Everything below needs a logged-in user.

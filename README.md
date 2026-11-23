@@ -96,6 +96,19 @@ The app needs the Gymbulag server to log in. After that it works offline on each
    If the device already has data logged before accounts existed, you're asked whether to add it to your account.
 6. On every other device, **Log in** with the same email. Your data downloads automatically.
 
+### Google and Facebook sign-in (optional)
+
+Set the keys below and **Continue with Google / Facebook** buttons appear on the login screen. Someone signing in this way for the first time only enters their date of birth (and the sign-up code, if set). If an account already exists with the same email, it's linked to it. Accounts made this way can add a password later in **Settings**.
+
+The app redirects to the provider and back to its own address (`https://your-app/`, with the trailing slash), so register that address with each provider, plus `http://localhost:5173/` for development.
+
+- **Google**: in Google Cloud Console → **APIs & Services → Credentials**, create an **OAuth client ID** of type **Web application**. Add your app's address under **Authorized JavaScript origins** and `https://your-app/` under **Authorized redirect URIs**. Set `GOOGLE_CLIENT_ID`.
+- **Facebook**: in Meta for Developers, create an app with the **Facebook Login** product. Under **Facebook Login → Settings**, add `https://your-app/` to **Valid OAuth Redirect URIs**. Set `FACEBOOK_APP_ID` and `FACEBOOK_APP_SECRET` (App settings → Basic). Until the app is switched to Live, only people with a role on it can log in.
+
+Both providers ask for a **privacy policy URL** (`https://your-app/privacy`) and Facebook also for **data deletion instructions** (`https://your-app/data-deletion`). Those pages are built in and readable without logging in; set `CONTACT_EMAIL` so they say where to send requests.
+
+The server checks every sign-in with the provider (Google's signing keys; Facebook's `debug_token` with your app secret), so these variables go on the server (Vercel environment variables), not into the app build.
+
 Sync runs on start, a few seconds after each change, when you return to the app, and every minute.
 
 How conflicts and deletes are handled:

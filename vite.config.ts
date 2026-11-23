@@ -55,6 +55,8 @@ export default defineConfig(({ mode }) => {
       __APP_VERSION__: JSON.stringify(pkg.version),
       // Settings → "Your data" (backup / restore / wipe). Only shown when SHOW_USER_DATA=true.
       __SHOW_USER_DATA__: JSON.stringify(env.SHOW_USER_DATA === 'true'),
+      // Shown on /privacy and /data-deletion as where to send data requests.
+      __CONTACT_EMAIL__: JSON.stringify((env.CONTACT_EMAIL ?? '').trim()),
     },
     plugins: [
       gymbulagApi(),

@@ -14,6 +14,7 @@ const KEYLEN = 64;
 const TOKEN_IDLE_MS = 180 * 24 * 3600 * 1000;
 
 import { AuthError } from './errors.mjs';
+import { verifyFacebook, verifyGoogle } from './oauth.mjs';
 
 export { AuthError };
 
@@ -126,6 +127,8 @@ function publicUser(row) {
     createdAt: Number(row.created_at),
     role: isAdminRow(row) ? 'admin' : 'user',
     isOwner: Number(row.owned ?? 0) > 0,
+    /** False for accounts made with Google / Facebook that haven't set a password. */
+    hasPassword: !!row.password_hash,
     ...profileOut(row),
   };
 }
@@ -158,18 +161,13 @@ export async function requireUser(pool, req) {
 
 /* ------------------------------------------------------------- endpoints */
 
-export async function register(pool, body, ctx) {
-  limit(`signup:${ctx.ip}`, 10, 3600_000, 'Too many sign-ups from this network.');
-  if (config.signupCode && String(body.signupCode ?? '').trim() !== config.signupCode) throw new AuthError(403, 'Wrong sign-up code');
-  const email = normalizeEmail(body.email);
-  checkEmail(email);
-  checkPassword(body.password);
-  const name = checkName(body.name);
-  const birthDate = checkBirthDate(body.birthDate);
-  const hash = await hashPassword(body.password);
+/**
+ * Create an account (inside a transaction). The very first account takes over anything synced
+ * before accounts existed. passwordHash is '' for accounts made with Google / Facebook.
+ */
+async function createUser(pool, { email, passwordHash, name, birthDate }, linkIdentity) {
   const now = Date.now();
-
-  const row = await transaction(pool, async (conn) => {
+  return transaction(pool, async (conn) => {
     // Serialise sign-ups so "is this the first account?" is answered once.
     await lockUsers(conn);
     const {
@@ -178,22 +176,99 @@ export async function register(pool, body, ctx) {
     let id;
     try {
       const sql = 'INSERT INTO users (email, password_hash, name, birth_date, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)';
-      const res = await conn.query(dialect === 'postgres' ? `${sql} RETURNING id` : sql, [email, hash, name, birthDate, now, now]);
+      const res = await conn.query(dialect === 'postgres' ? `${sql} RETURNING id` : sql, [email, passwordHash, name, birthDate, now, now]);
       id = dialect === 'postgres' ? res.rows[0].id : res.insertId;
     } catch (e) {
       if (isDuplicate(e)) throw new AuthError(409, 'An account with this email already exists. Log in instead.');
       throw e;
     }
+    if (linkIdentity) await linkIdentity(conn, id);
     const user = await loadUser(conn, id);
-    // The very first account takes over anything synced before accounts existed.
     if (Number(n) === 0) for (const t of Object.keys(TABLES)) await conn.query(`UPDATE "${t}" SET user_id = $1 WHERE user_id = 0`, [user.id]);
     return user;
   });
+}
+
+function checkSignupCode(body) {
+  if (config.signupCode && String(body.signupCode ?? '').trim() !== config.signupCode) throw new AuthError(403, 'Wrong sign-up code');
+}
+
+export async function register(pool, body, ctx) {
+  limit(`signup:${ctx.ip}`, 10, 3600_000, 'Too many sign-ups from this network.');
+  checkSignupCode(body);
+  const email = normalizeEmail(body.email);
+  checkEmail(email);
+  checkPassword(body.password);
+  const name = checkName(body.name);
+  const birthDate = checkBirthDate(body.birthDate);
+  const row = await createUser(pool, { email, passwordHash: await hashPassword(body.password), name, birthDate });
   await recordLogin(pool, { userId: row.id, email, success: true, reason: 'signup' }, ctx);
   return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
 }
 
-/** Log in. adminOnly: the admin panel's own sign-in, which only admin accounts get past. */
+const PROVIDER_NAME = { google: 'Google', facebook: 'Facebook' };
+
+/**
+ * Log in with Google or Facebook (body: provider, credential, nonce for Google).
+ * Logs in the linked account, or links the account with the same email, or creates one.
+ * A new account needs a date of birth (and the sign-up code, if set): without them the reply is
+ * { needsProfile, email, name } and the app asks, then sends the same credential again with them.
+ */
+export async function oauthLogin(pool, body, ctx) {
+  const provider = body.provider;
+  if (!PROVIDER_NAME[provider]) throw new AuthError(400, 'Unknown sign-in provider');
+  limit(`oauth-ip:${ctx.ip}`, 30, 15 * 60_000, 'Too many login attempts.');
+  const id = provider === 'google' ? await verifyGoogle(body.credential, body.nonce) : await verifyFacebook(body.credential);
+  const email = normalizeEmail(id.email);
+  const reason = provider;
+  const linkIdentity = (db, userId) =>
+    db.query('INSERT INTO user_identities (provider, subject, user_id, email, created_at) VALUES ($1, $2, $3, $4, $5)', [provider, id.subject, userId, email, Date.now()]);
+
+  let {
+    rows: [row],
+  } = await pool.query(`SELECT ${USER_COLUMNS} FROM user_identities i JOIN users u ON u.id = i.user_id WHERE i.provider = $1 AND i.subject = $2`, [provider, id.subject]);
+  if (!row && email) {
+    // Same (provider-verified) email as an existing account: that's this person, so link it.
+    ({
+      rows: [row],
+    } = await pool.query(`SELECT ${USER_COLUMNS} FROM users u WHERE u.email = $1`, [email]));
+    if (row) {
+      const blocked = statusError(row);
+      if (blocked) {
+        await recordLogin(pool, { userId: row.id, email, success: false, reason: row.status }, ctx);
+        throw new AuthError(403, blocked);
+      }
+      try {
+        await linkIdentity(pool, row.id);
+      } catch (e) {
+        if (!isDuplicate(e)) throw e; // linked by a request running at the same time
+      }
+    }
+  }
+
+  if (row) {
+    const blocked = statusError(row);
+    if (blocked) {
+      await recordLogin(pool, { userId: row.id, email: row.email, success: false, reason: row.status }, ctx);
+      throw new AuthError(403, blocked);
+    }
+    await recordLogin(pool, { userId: row.id, email: row.email, success: true, reason }, ctx);
+    return { token: await issueToken(pool, row.id, ctx.device), user: publicUser(row) };
+  }
+
+  // New account.
+  if (!email) throw new AuthError(400, `Your ${PROVIDER_NAME[provider]} account didn't share an email address. Sign up with your email instead.`);
+  if (body.birthDate === undefined) return { needsProfile: true, email, name: id.name.trim().slice(0, 100) };
+  limit(`signup:${ctx.ip}`, 10, 3600_000, 'Too many sign-ups from this network.');
+  checkSignupCode(body);
+  checkEmail(email);
+  const name = checkName(body.name ?? id.name);
+  const birthDate = checkBirthDate(body.birthDate);
+  const created = await createUser(pool, { email, passwordHash: '', name, birthDate }, linkIdentity);
+  await recordLogin(pool, { userId: created.id, email, success: true, reason: `signup_${provider}` }, ctx);
+  return { token: await issueToken(pool, created.id, ctx.device), user: publicUser(created) };
+}
+
 /** Write one row of login activity. Never fails the request it belongs to. */
 export async function recordLogin(pool, { userId = null, email = '', success, reason, portal = 'app' }, ctx) {
   try {
@@ -271,13 +346,13 @@ export async function updateAvatar(pool, auth, body) {
   return { user: publicUser(await loadUser(pool, auth.user.id)) };
 }
 
-/** Change password. Every other device is logged out. */
+/** Change (or, for Google / Facebook accounts without one, set) the password. Every other device is logged out. */
 export async function changePassword(pool, auth, body) {
   limit(`pw:${auth.user.id}`, 8, 15 * 60_000, 'Too many attempts.');
   const {
     rows: [row],
   } = await pool.query('SELECT password_hash FROM users WHERE id = $1', [auth.user.id]);
-  if (!(await verifyPassword(body.current ?? '', row.password_hash))) throw new AuthError(400, 'Your current password is wrong');
+  if (row.password_hash && !(await verifyPassword(body.current ?? '', row.password_hash))) throw new AuthError(400, 'Your current password is wrong');
   checkPassword(body.password);
   await pool.query('UPDATE users SET password_hash = $1, updated_at = $2 WHERE id = $3', [await hashPassword(body.password), Date.now(), auth.user.id]);
   const res = await pool.query('DELETE FROM auth_tokens WHERE user_id = $1 AND token_hash <> $2', [auth.user.id, auth.tokenHash]);

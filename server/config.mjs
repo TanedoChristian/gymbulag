@@ -13,6 +13,11 @@ export const config = {
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
+  /** Google sign-in: the OAuth "Web application" client ID. Empty = no Google button. */
+  googleClientId: (env.GOOGLE_CLIENT_ID ?? '').trim(),
+  /** Facebook sign-in: both are needed (the secret checks login tokens). Empty = no Facebook button. */
+  facebookAppId: (env.FACEBOOK_APP_ID ?? '').trim(),
+  facebookAppSecret: (env.FACEBOOK_APP_SECRET ?? '').trim(),
   /**
    * Which database to use: 'postgres' (Supabase, used on Vercel) or 'mysql' (local).
    * DB_DRIVER wins; otherwise Postgres when DATABASE_URL is set, else MySQL.
