@@ -78,7 +78,8 @@ function MyGyms({ onDiscover }: { onDiscover: () => void }) {
           <div className="eyebrow mb-2 px-1">Your gyms</div>
           <ul className="space-y-2">
             {list.map((c) => (
-              <li key={c.id} className="card flex items-center gap-3 p-3.5">
+              <li key={c.id} className="card card-hover flex items-center gap-3 p-3.5">
+                <Link to={`/community/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3" aria-label={`Open ${c.name} community`}>
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-rack text-volt-500">
                   <Users size={19} />
                 </span>
@@ -94,13 +95,15 @@ function MyGyms({ onDiscover }: { onDiscover: () => void }) {
                   )}
                   <p className="mt-0.5 text-xs text-steel-mute dark:text-floor-mute">Member since {format(c.joinedAt, 'd MMM yyyy')}</p>
                 </div>
+                <ChevronRight size={18} className="shrink-0 text-steel-mute" />
+                </Link>
                 <button className="btn-ghost !px-2.5 text-xs" onClick={() => leave(c)}>
                   <LogOut size={14} /> Leave
                 </button>
               </li>
             ))}
           </ul>
-          <p className="mt-3 px-1 text-xs text-steel-mute dark:text-floor-mute">Your gym can see your name, email, when you joined and how often you log workouts.</p>
+          <p className="mt-3 px-1 text-xs text-steel-mute dark:text-floor-mute">Tap a gym to see its feed and members. Your gym can see your name, email, when you joined and how often you log workouts.</p>
         </section>
       )}
     </div>

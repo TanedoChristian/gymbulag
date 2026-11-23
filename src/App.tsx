@@ -12,6 +12,7 @@ import DayPage from './pages/DayPage';
 const ProgressPage = lazy(() => import('./pages/ProgressPage'));
 const LibraryPage = lazy(() => import('./pages/LibraryPage'));
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
+const CommunityDetailPage = lazy(() => import('./pages/CommunityDetailPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const AuthPage = lazy(() => import('./pages/AuthPage'));
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/progress" element={<ProgressPage />} />
           <Route path="/library" element={<LibraryPage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="/community/:id" element={<CommunityDetailPage />} />
           <Route path="/nearby" element={<Navigate to="/community?tab=nearby" replace />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/gym" element={<GymPage />} />

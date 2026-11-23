@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, Loader2, MapPin } from 'lucide-react';
 import { PageHeader } from '../components/ui';
 import { joinCommunity } from '../lib/community';
 
-type State = { kind: 'joining' } | { kind: 'joined'; name: string; location: string; already: boolean } | { kind: 'error'; message: string };
+type State = { kind: 'joining' } | { kind: 'joined'; id: number; name: string; location: string; already: boolean } | { kind: 'error'; message: string };
 
 /** Opened by scanning a gym's QR code: joins the community straight away. */
 export default function JoinPage() {
@@ -17,7 +17,7 @@ export default function JoinPage() {
     started.current = code;
     setState({ kind: 'joining' });
     joinCommunity(code)
-      .then((r) => setState({ kind: 'joined', name: r.community.name, location: r.community.location, already: r.alreadyMember }))
+      .then((r) => setState({ kind: 'joined', id: r.community.id, name: r.community.name, location: r.community.location, already: r.alreadyMember }))
       .catch((e) => setState({ kind: 'error', message: (e as Error).message }));
   }, [code]);
 
@@ -46,8 +46,11 @@ export default function JoinPage() {
                   </p>
                 )}
               </div>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">The gym can see your name, email, when you joined and how often you log workouts. You can leave any time in Settings.</p>
-              <Link to="/" className="btn-primary w-full">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">The gym can see your name, email, picture, when you joined and how often you log workouts. You can leave any time from Community → My gyms.</p>
+              <Link to={`/community/${state.id}`} className="btn-primary w-full">
+                Open the community
+              </Link>
+              <Link to="/" className="btn-secondary w-full">
                 Start training
               </Link>
             </>

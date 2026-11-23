@@ -14,6 +14,7 @@ import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
 import { AuthError, adminSessionFromApp, changePassword, login, logout, register, requireUser, updateAvatar, updateProfile } from './auth.mjs';
 import { serveAvatar } from './profile.mjs';
 import { routeCommunity } from './community.mjs';
+import { routeFeed, serveMedia } from './feed.mjs';
 
 const DIST = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const MAX_BODY = 64 * 1024 * 1024;
@@ -214,6 +215,8 @@ export function createHandler(pool) {
       }
       const avatar = url.pathname.match(/^\/api\/avatars\/([^/]+)$/);
       if (avatar && req.method === 'GET') return await serveAvatar(pool, avatar[1], res);
+      const media = url.pathname.match(/^\/api\/community-media\/([^/]+)$/);
+      if (media && req.method === 'GET') return await serveMedia(pool, media[1], res);
       if (url.pathname === '/api/auth/register' && req.method === 'POST') return send(res, 201, await register(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/auth/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req)));
       if (url.pathname === '/api/admin/login' && req.method === 'POST') return send(res, 200, await login(pool, await readJson(req), clientInfo(req), { adminOnly: true }));
@@ -243,6 +246,8 @@ export function createHandler(pool) {
         );
       }
 
+      const feedOut = await routeFeed(pool, auth, req, url, () => readJson(req));
+      if (feedOut !== undefined) return send(res, 200, feedOut);
       const community = await routeCommunity(pool, auth, req, url, () => readJson(req));
       if (community !== undefined) return send(res, 200, community);
 

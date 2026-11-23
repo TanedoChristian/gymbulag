@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { format } from 'date-fns';
-import { CirclePause, CirclePlay, Globe, Loader2, Lock, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { CirclePause, CirclePlay, Globe, MessageSquare, Loader2, Lock, MapPin, MoreVertical, Pencil, Plus, QrCode, RefreshCw, Trash2, UserCog, Users, X } from 'lucide-react';
 import { Modal } from '../../components/ui';
 import { Menu } from '../../components/Menu';
 import { QrModal } from '../../components/community/QrModal';
@@ -155,6 +156,7 @@ function OwnersModal({ community, onClose, onSaved }: { community: Community | n
 }
 
 export default function Communities() {
+  const navigate = useNavigate();
   const toast = useToast();
   const confirm = useConfirm();
   const [list, setList] = useState<Community[] | null>(null);
@@ -372,6 +374,7 @@ export default function Communities() {
                         label={`Actions for ${c.name}`}
                         trigger={<MoreVertical size={17} />}
                         items={[
+                          { label: 'Open community feed', icon: <MessageSquare size={16} />, onSelect: () => navigate(`/community/${c.id}`) },
                           { label: 'Members', icon: <Users size={16} />, onSelect: () => setMembersId(c.id) },
                           { label: 'Gym owners', icon: <UserCog size={16} />, onSelect: () => setOwnersId(c.id) },
                           { label: 'Edit details', icon: <Pencil size={16} />, onSelect: () => setForm({ open: true, edit: c }) },

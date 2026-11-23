@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Building2, Loader2, MapPin, QrCode } from 'lucide-react';
+import { Building2, Loader2, MapPin, MessageSquare, QrCode } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { EmptyState, PageHeader, TabBar } from '../components/ui';
 import { QrModal } from '../components/community/QrModal';
 import { MembersPanel } from '../components/community/MembersPanel';
@@ -31,9 +32,14 @@ export default function GymPage() {
         subtitle={current ? current.name : 'Your gym communities'}
         right={
           current && (
-            <button className="btn-secondary" onClick={() => setQr(true)}>
-              <QrCode size={16} /> QR code
-            </button>
+            <div className="flex gap-2">
+              <Link to={`/community/${current.id}`} className="btn-primary">
+                <MessageSquare size={16} /> <span className="hidden sm:inline">Community</span>
+              </Link>
+              <button className="btn-secondary" onClick={() => setQr(true)} aria-label="QR code">
+                <QrCode size={16} /> <span className="hidden sm:inline">QR code</span>
+              </button>
+            </div>
           )
         }
       />
