@@ -1,4 +1,4 @@
-# Gymbulag — workout log
+# Spotter — workout log
 
 A fast, offline-first gym tracker. Pick a day on the calendar, log what you trained (exercise, weight and reps for every set), and watch your progress.
 
@@ -11,7 +11,7 @@ A fast, offline-first gym tracker. Pick a day on the calendar, log what you trai
 - **Walks and runs**: log steps, distance (km) and time on any day, as many as you like, next to gym sessions on the same day. Pace (min/km and km/h) is worked out for you. Days with a walk or run get a green footprints mark on the calendar
 - **Food tracking**: calories, protein, carbs and fat per meal (breakfast, lunch, dinner, snacks), with daily goals in Settings. Every food shows how far its numbers can be trusted:
   - **Verified**: 7,793 foods from USDA FoodData Central (SR Legacy, lab data, public domain), bundled with the app so search works offline
-  - **Checked** / **Unverified**: packaged products from Open Food Facts, by barcode (camera on Android Chrome, or type the number) or by name (needs the Gymbulag server). "Checked" means an Open Food Facts moderator reviewed it
+  - **Checked** / **Unverified**: packaged products from Open Food Facts, by barcode (camera on Android Chrome, or type the number) or by name (needs the Spotter server). "Checked" means an Open Food Facts moderator reviewed it
   - **Yours**: foods you add yourself, with a note on where the numbers came from (package label, PhilFCT, recipe…)
   - Values that can't be right (calories that don't match the macros, more than 900 kcal per 100 g) are flagged on unverified foods
   - Favourites, recents, quick add (just type the totals), copy a meal from yesterday
@@ -51,6 +51,16 @@ A fast, offline-first gym tracker. Pick a day on the calendar, log what you trai
 - Mobile-first layout with safe-area handling, keyboard and screen-reader friendly. Inputs are 16px on touch screens so iOS doesn't zoom in while you type
 - Error boundary with a one-click data rescue download
 
+## Renaming the app
+
+The name lives in one file, [`brand.json`](brand.json):
+
+```json
+{ "name": "Spotter", "tagline": "Workout Log", "description": "…", "fileSlug": "spotter" }
+```
+
+Edit it and deploy. The app's screens, the browser tab, the installed-app name and the server's messages all read it. Internal ids stay as they were (the `gymbulag:` storage keys, the local database and the backup format), so a rename never logs anyone out or makes old backups unreadable. After a rename, also update the app name in Google's Branding page and Facebook's app settings.
+
 ## Development
 
 Requires Node 18+.
@@ -83,7 +93,7 @@ src/
 
 ## Server, accounts and sync
 
-The app needs the Gymbulag server to log in. After that it works offline on each device and syncs to Postgres (Supabase) whenever it can reach the server. Each person has their own account (one per email) and only ever sees their own data.
+The app needs the Spotter server to log in. After that it works offline on each device and syncs to Postgres (Supabase) whenever it can reach the server. Each person has their own account (one per email) and only ever sees their own data.
 
 1. Create a Supabase project. In **Connect**, copy the **Transaction pooler** URI (port 6543).
 2. Copy `.env.example` to `.env` and set `DATABASE_URL` to that URI, with your database password filled in.
@@ -125,7 +135,7 @@ Every table has Row Level Security switched on with no policies, so Supabase's p
 
 ### Moving from the old MySQL server
 
-`npm run db:copy-mysql` copies an existing Gymbulag MySQL database into Supabase in one go: accounts, passwords, device logins, all synced data and the sync counter. Devices stay logged in and keep syncing.
+`npm run db:copy-mysql` copies an existing Spotter MySQL database into Supabase in one go: accounts, passwords, device logins, all synced data and the sync counter. Devices stay logged in and keep syncing.
 
 1. Make sure your MySQL is running (`sudo service mysql start`) and the `DB_*` settings in `.env` point at it.
 2. `npm run db:copy-mysql -- --dry` shows how many rows would be copied.

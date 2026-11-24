@@ -6,6 +6,7 @@ import { ApiError, api, apiBase, getAuth, getServerUrl, setServerUrl } from '../
 import { ageFromBirthDate, completeLogin, deviceDataPlan, logIn, logOut, signUp, type AuthResult, type LocalSummary } from '../lib/auth';
 import { useConfirm } from '../context/Confirm';
 import { consumeOAuthReturn, oauthLogin, startOAuth, type OAuthProviders, type OAuthReturn, type Provider } from '../lib/oauth';
+import { APP_NAME } from '../brand';
 
 type Mode = 'login' | 'signup';
 type Health = { state: 'checking' } | { state: 'ok'; signupCode: boolean; oauth: OAuthProviders } | { state: 'down'; error: string };
@@ -30,7 +31,7 @@ export default function AuthPage() {
     setHealth({ state: 'checking' });
     try {
       const h = await api<{ app?: string; accounts?: boolean; signupCode?: boolean; oauth?: OAuthProviders }>('/health', undefined, { token: null, base: apiBase(url) });
-      if (!h.accounts) throw new Error('This Gymbulag server is out of date. Restart it to enable accounts.');
+      if (!h.accounts) throw new Error(`This ${APP_NAME} server is out of date. Restart it to enable accounts.`);
       setHealth({ state: 'ok', signupCode: !!h.signupCode, oauth: h.oauth ?? {} });
     } catch (e) {
       setHealth({ state: 'down', error: errText(e) });
@@ -78,7 +79,7 @@ export default function AuthPage() {
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-4 py-10 sm:px-6">
       <div className="mb-8 text-center">
         <img src="/icon.svg" alt="" className="mx-auto h-14 w-14" />
-        <h1 className="mt-4 font-display text-4xl font-bold tracking-wide">Gymbulag</h1>
+        <h1 className="mt-4 font-display text-4xl font-bold tracking-wide">{APP_NAME}</h1>
         <p className="mt-2 text-sm text-steel-mute dark:text-floor-mute">
           {pending || oauth?.state === 'profile' ? 'One more thing' : expired ? 'Your login expired. Log in again to keep syncing.' : mode === 'login' ? 'Log in to see your workouts and food on every device.' : 'Create your account.'}
         </p>

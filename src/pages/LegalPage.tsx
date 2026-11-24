@@ -2,6 +2,7 @@
  * Google and Facebook ask for these URLs before sign-in with them can go live. */
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { APP_NAME } from '../brand';
 
 const UPDATED = '24 November 2026';
 const CONTACT = __CONTACT_EMAIL__;
@@ -25,7 +26,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
     <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:px-6">
       <Link to="/" className="mb-6 inline-flex items-center gap-2">
         <img src="/icon.svg" alt="" className="h-8 w-8" />
-        <span className="font-display text-lg font-bold tracking-wide">Gymbulag</span>
+        <span className="font-display text-lg font-bold tracking-wide">{APP_NAME}</span>
       </Link>
       <h1 className="font-display text-3xl font-bold tracking-wide">{title}</h1>
       <p className="mt-1 text-xs text-steel-mute dark:text-floor-mute">Last updated {UPDATED}</p>
@@ -38,7 +39,7 @@ function Shell({ title, children }: { title: string; children: ReactNode }) {
           Delete your data
         </Link>
         <Link className="link-accent" to="/">
-          Open Gymbulag
+          Open {APP_NAME}
         </Link>
       </p>
     </div>
@@ -49,7 +50,7 @@ function Privacy() {
   return (
     <Shell title="Privacy policy">
       <p>
-        Gymbulag is a workout, food and progress log. This page explains what we store about you, why, and what you can do about it. We don't sell your data, show ads or use
+        {APP_NAME} is a workout, food and progress log. This page explains what we store about you, why, and what you can do about it. We don't sell your data, show ads or use
         analytics or tracking tools.
       </p>
 
@@ -127,11 +128,11 @@ function Privacy() {
       <ul>
         <li>You can see and edit your profile, and change or set your password, in Settings.</li>
         <li>You can ask us for a copy of your data, to correct it, or to delete your account at any time.</li>
-        <li>If you signed in with Facebook or Google, you can also remove Gymbulag's access in that service's settings.</li>
+        <li>If you signed in with Facebook or Google, you can also remove {APP_NAME}'s access in that service's settings.</li>
       </ul>
 
       <H>Children</H>
-      <p>You must be at least 13 to use Gymbulag. We don't knowingly hold data about anyone younger; if you think we do, contact us and we'll delete it.</p>
+      <p>You must be at least 13 to use {APP_NAME}. We don't knowingly hold data about anyone younger; if you think we do, contact us and we'll delete it.</p>
 
       <H>Security</H>
       <p>Data is sent over encrypted connections (HTTPS). Passwords and login tokens are stored only as hashes. No system is perfectly secure, but we work to protect your data.</p>
@@ -150,7 +151,7 @@ function Privacy() {
 function DataDeletion() {
   return (
     <Shell title="Delete your data">
-      <p>You can ask us to delete your Gymbulag account and all the data in it at any time, including if you signed up with Google or Facebook.</p>
+      <p>You can ask us to delete your {APP_NAME} account and all the data in it at any time, including if you signed up with Google or Facebook.</p>
 
       <H>How to ask</H>
       <ul>
@@ -166,16 +167,16 @@ function DataDeletion() {
         Google/Facebook sign-in link and your sign-in history. We do this within 30 days and email you when it's done. It can't be undone.
       </p>
 
-      <H>Remove Gymbulag from Facebook or Google</H>
+      <H>Remove {APP_NAME} from Facebook or Google</H>
       <ul>
         <li>
-          <strong>Facebook:</strong> Settings &amp; privacy → Settings → Apps and websites → Gymbulag → Remove.
+          <strong>Facebook:</strong> Settings &amp; privacy → Settings → Apps and websites → {APP_NAME} → Remove.
         </li>
         <li>
-          <strong>Google:</strong> myaccount.google.com → Security → Your connections to third-party apps &amp; services → Gymbulag → Delete all connections.
+          <strong>Google:</strong> myaccount.google.com → Security → Your connections to third-party apps &amp; services → {APP_NAME} → Delete all connections.
         </li>
       </ul>
-      <p>This stops Gymbulag from using that sign-in, but doesn't delete your Gymbulag data; email us for that.</p>
+      <p>This stops {APP_NAME} from using that sign-in, but doesn't delete your {APP_NAME} data; email us for that.</p>
 
       <H>Just this device</H>
       <p>Logging out removes your data from that device. It stays in your account until you ask us to delete it.</p>

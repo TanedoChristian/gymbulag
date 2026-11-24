@@ -1,4 +1,8 @@
 // Server configuration, read from environment variables (see .env.example).
+import { createRequire } from 'node:module';
+
+/** The app's name (brand.json at the project root; edit that file to rename the app). */
+export const brand = createRequire(import.meta.url)('../brand.json');
 const env = process.env;
 
 const databaseUrl = (env.DATABASE_URL ?? '').trim();

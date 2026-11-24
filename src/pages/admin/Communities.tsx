@@ -11,6 +11,7 @@ import { useToast } from '../../context/Toast';
 import { useConfirm } from '../../context/Confirm';
 import { addOwner, adminCommunities, createCommunity, deleteCommunity, removeOwner, setCommunityCover, updateCommunity, type Community, type Visibility } from '../../lib/community';
 import { Badge, EmptyRow, ErrorBlock, LoadingBlock, PageTitle, Pagination, Panel, SearchBox, SelectFilter, Table, Td, Th, THead, Toolbar, Tr, usePaged, useSort } from './kit';
+import { APP_NAME } from '../../brand';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 type VisibilityFilter = 'all' | Visibility;
@@ -149,7 +150,7 @@ function OwnersModal({ community, onClose, onSaved }: { community: Community | n
               {busy ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />} Add
             </button>
           </form>
-          <p className="text-xs text-steel-mute">They need a Gymbulag account first. Access shows up the next time their app refreshes.</p>
+          <p className="text-xs text-steel-mute">They need a {APP_NAME} account first. Access shows up the next time their app refreshes.</p>
         </div>
       )}
     </Modal>

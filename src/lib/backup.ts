@@ -6,7 +6,9 @@ import { base64ToBuffer, bufferToBase64 } from './photos';
 import { kgToUnit, trimNumber } from './units';
 import { sortSessions } from './calc';
 import { DEFAULT_EXERCISES } from './exercises';
+import { APP_NAME } from '../brand';
 
+/** Stays 'gymbulag' whatever the app is called, so every backup ever made can be restored. */
 export const BACKUP_APP_ID = 'gymbulag';
 export const BACKUP_VERSION = 1;
 
@@ -234,7 +236,7 @@ export function parseBackup(text: string): ParseResult {
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const where = issue?.path.join('.') || 'file';
-    return { ok: false, error: `This doesn't look like a Gymbulag backup (${where}: ${issue?.message ?? 'invalid'}).` };
+    return { ok: false, error: `This doesn't look like a ${APP_NAME} backup (${where}: ${issue?.message ?? 'invalid'}).` };
   }
   const p = parsed.data;
   // Every exercise referenced by a session must exist, otherwise the log would show "Unknown exercise".

@@ -2,6 +2,7 @@ import { addDays } from 'date-fns';
 import { toKey } from './date';
 import { trimNumber } from './units';
 import type { Food, FoodEntry, FoodPortion, FoodTrust, Meal, Nutrients } from '../types';
+import { APP_NAME } from '../brand';
 
 export const MEAL_LABEL: Record<Meal, string> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', snack: 'Snacks' };
 export const MACRO_COLOR = { protein: '#c6f000', carbs: '#ff6e40', fat: '#5ec8ff', kcal: '#3dd68c' } as const;
@@ -288,18 +289,18 @@ export async function offByBarcode(code: string): Promise<Food | null> {
 
 /**
  * Name search on Open Food Facts. Their search service doesn't allow direct browser calls,
- * so this goes through the Gymbulag server (`npm run server`).
+ * so this goes through the app's server (`npm run server`).
  */
 export async function offSearch(query: string, api: { base: string; token: string }): Promise<Food[]> {
   let res: Response;
   try {
     res = await fetch(`${api.base}/food/search?q=${encodeURIComponent(query)}`, { headers: api.token ? { Authorization: `Bearer ${api.token}` } : {} });
   } catch {
-    throw new FoodLookupError(navigator.onLine === false ? 'You are offline' : 'Name search needs the Gymbulag server. Barcode scanning works without it.');
+    throw new FoodLookupError(navigator.onLine === false ? 'You are offline' : `Name search needs the ${APP_NAME} server. Barcode scanning works without it.`);
   }
   const data = await res.json().catch(() => null);
   if (!res.ok || !data) {
-    throw new FoodLookupError(res.status === 404 || !data ? 'Name search needs the Gymbulag server. Barcode scanning works without it.' : data.error ?? `Search failed (${res.status})`);
+    throw new FoodLookupError(res.status === 404 || !data ? `Name search needs the ${APP_NAME} server. Barcode scanning works without it.` : data.error ?? `Search failed (${res.status})`);
   }
   return (data.products as any[]).map(offToFood).filter((f): f is Food => f != null);
 }

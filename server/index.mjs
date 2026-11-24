@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Gymbulag sync server: stores the app's data in Postgres (Supabase) and serves the built app.
+// The app's sync server: stores the app's data in Postgres (Supabase) and serves the built app.
 // On Vercel the same handler runs as a function (api/index.mjs).
 //   npm run db:migrate   create / upgrade the tables
 //   npm run server       start on PORT (default 8787)
@@ -7,7 +7,7 @@ import http from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { config, databaseLabel } from './config.mjs';
+import { brand, config, databaseLabel } from './config.mjs';
 import { createPool } from './db.mjs';
 import { migrate } from './migrate.mjs';
 import { TABLES, pullSince, applyChanges, counts } from './sync.mjs';
@@ -104,7 +104,7 @@ async function searchOpenFoodFacts(q) {
   let r;
   try {
     r = await fetch(`https://search.openfoodfacts.org/search?q=${encodeURIComponent(query)}&page_size=25&fields=${OFF_FIELDS}`, {
-      headers: { 'User-Agent': 'Gymbulag/1.0 (self-hosted personal workout log)' },
+      headers: { 'User-Agent': `${brand.name}/1.0 (personal workout log)` },
       signal: AbortSignal.timeout(12_000),
     });
   } catch {
@@ -157,7 +157,7 @@ out center tags 60;`;
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        'User-Agent': 'Gymbulag/1.0 (self-hosted personal workout log)',
+        'User-Agent': `${brand.name}/1.0 (personal workout log)`,
       },
       body: `data=${encodeURIComponent(query)}`,
       signal: AbortSignal.timeout(14_000),
@@ -294,7 +294,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
   }
   const pool = createPool();
   createServer(pool).listen(config.port, config.host, () => {
-    console.log(`Gymbulag server on http://localhost:${config.port}  (${databaseLabel()})`);
+    console.log(`${brand.name} server on http://localhost:${config.port}  (${databaseLabel()})`);
     if (!config.signupCode) console.log('Tip: anyone who can reach this server can create an account. Set SIGNUP_CODE in .env to require a code.');
   });
 }

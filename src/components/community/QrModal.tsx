@@ -4,6 +4,7 @@ import { Modal } from '../ui';
 import { useToast } from '../../context/Toast';
 import { useConfirm } from '../../context/Confirm';
 import { joinUrl, qrDataUrl, type Community } from '../../lib/community';
+import { APP_NAME } from '../../brand';
 
 /** A community's join QR code, ready to download or print. Admins can also replace the code (old prints stop working). */
 export function QrModal({ community, onClose, onRegenerate }: { community: Community | null; onClose: () => void; onRegenerate?: () => Promise<void> }) {
@@ -37,7 +38,7 @@ export function QrModal({ community, onClose, onRegenerate }: { community: Commu
     w.document.write(`<!doctype html><title>${esc(community.name)} QR</title>
 <style>body{font-family:system-ui,sans-serif;text-align:center;padding:40px}img{width:420px;max-width:100%}h1{margin:0 0 4px}p{color:#555;margin:4px 0}</style>
 <h1>${esc(community.name)}</h1>${community.location ? `<p>${esc(community.location)}</p>` : ''}
-<img src="${src}" alt=""><p><b>Scan to join on Gymbulag</b></p><p style="font-size:12px">${esc(url)}</p>
+<img src="${src}" alt=""><p><b>Scan to join on ${esc(APP_NAME)}</b></p><p style="font-size:12px">${esc(url)}</p>
 <script>window.onload=()=>{window.print()}</script>`);
     w.document.close();
   };

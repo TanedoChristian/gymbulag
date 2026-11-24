@@ -7,6 +7,7 @@ import { RestTimerBar } from './RestTimerBar';
 import { UpdatePrompt } from './UpdatePrompt';
 import { useRestTimer } from '../context/RestTimer';
 import { useAuth } from '../lib/auth';
+import { APP_NAME } from '../brand';
 
 const NAV = [
   { to: '/', label: 'Calendar', icon: CalendarDays, match: (p: string) => p === '/' || p.startsWith('/day') },
@@ -32,7 +33,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <aside className="sticky top-0 z-40 hidden h-dvh w-56 shrink-0 flex-col border-r border-white/10 bg-rack px-3 py-5 text-steel-bright lg:flex" aria-label="Main">
         <div className="mb-8 flex items-center gap-2.5 px-2">
           <img src="/icon.svg" alt="" className="h-8 w-8" />
-          <span className="font-display text-xl font-bold tracking-wide">Gymbulag</span>
+          <span className="font-display text-xl font-bold tracking-wide">{APP_NAME}</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1">
           {NAV.map(({ to, label, icon: Icon, match }) => {

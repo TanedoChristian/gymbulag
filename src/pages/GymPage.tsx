@@ -6,6 +6,7 @@ import { QrModal } from '../components/community/QrModal';
 import { MembersPanel } from '../components/community/MembersPanel';
 import { CommunityCover } from '../components/community/CommunityCover';
 import { ownedCommunities, type Community } from '../lib/community';
+import { APP_NAME } from '../brand';
 
 /** Gym owners: the communities an admin gave them access to, and who's in them. */
 export default function GymPage() {
@@ -53,7 +54,7 @@ export default function GymPage() {
           </div>
         ) : list.length === 0 ? (
           <EmptyState icon={<Building2 size={22} />} title="No gym access yet">
-            When Gymbulag gives you access to your gym's community, its members show up here.
+            When {APP_NAME} gives you access to your gym's community, its members show up here.
           </EmptyState>
         ) : (
           <>

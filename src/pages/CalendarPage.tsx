@@ -13,6 +13,7 @@ import { computePRs, sessionHasContent, sessionMuscles, sessionTitle, sessionVol
 import { MUSCLE_COLORS, capitalize } from '../lib/muscles';
 import { formatVolume } from '../lib/units';
 import type { Session } from '../types';
+import { APP_NAME } from '../brand';
 
 function parseMonth(param: string | null): Date {
   if (param) {
@@ -110,7 +111,7 @@ export default function CalendarPage() {
         <div className="relative pl-2">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="font-display text-5xl font-bold leading-[0.9] tracking-wide sm:text-6xl">Gymbulag</div>
+              <div className="font-display text-5xl font-bold leading-[0.9] tracking-wide sm:text-6xl">{APP_NAME}</div>
               <div className="mt-2 text-sm font-medium text-floor-mute">
                 {greeting()}{firstName ? `, ${firstName}` : ''} · {format(new Date(), 'EEEE, MMM d')}
               </div>

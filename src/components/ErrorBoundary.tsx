@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { buildBackup, downloadFile } from '../lib/backup';
 import { exportAll } from '../lib/repo';
+import { APP_FILE_SLUG } from '../brand';
 
 interface State {
   error: Error | null;
@@ -20,7 +21,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, State> {
   private rescue = async () => {
     try {
       const data = await exportAll();
-      downloadFile(`gymbulag-rescue-${Date.now()}.json`, JSON.stringify(buildBackup(data), null, 2), 'application/json');
+      downloadFile(`${APP_FILE_SLUG}-rescue-${Date.now()}.json`, JSON.stringify(buildBackup(data), null, 2), 'application/json');
     } catch (e) {
       alert(`Could not export data: ${String(e)}`);
     }

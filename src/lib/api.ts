@@ -1,5 +1,6 @@
-/* Talking to the Gymbulag server: where it is, who is logged in, and one fetch helper. */
+/* Talking to the server: where it is, who is logged in, and one fetch helper. */
 import type { ProfileFields } from './profile';
+import { APP_NAME } from '../brand';
 
 export interface User extends Partial<ProfileFields> {
   id: number;
@@ -109,11 +110,11 @@ export async function api<T>(path: string, body?: unknown, opts: { token?: strin
       cache: 'no-store',
     });
   } catch {
-    throw new ApiError(navigator.onLine === false ? 'You are offline' : `Can't reach the Gymbulag server at ${base}`);
+    throw new ApiError(navigator.onLine === false ? 'You are offline' : `Can't reach the ${APP_NAME} server at ${base}`);
   }
   const data = await res.json().catch(() => null);
   if (res.status === 401 && token && auth && token === auth.token) setAuth({ ...auth, expired: true });
-  if (!res.ok) throw new ApiError(data?.error ?? (res.status === 404 || res.status === 502 || res.status === 504 ? "The Gymbulag server isn't running" : `Server error (${res.status})`), res.status);
-  if (data == null) throw new ApiError("That address isn't a Gymbulag server");
+  if (!res.ok) throw new ApiError(data?.error ?? (res.status === 404 || res.status === 502 || res.status === 504 ? `The ${APP_NAME} server isn't running` : `Server error (${res.status})`), res.status);
+  if (data == null) throw new ApiError(`That address isn't a ${APP_NAME} server`);
   return data as T;
 }

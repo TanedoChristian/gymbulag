@@ -5,6 +5,7 @@ import { useConfirm } from '../context/Confirm';
 import { useAuth } from '../lib/auth';
 import { adminFromApp, adminLogIn, adminLogOut, useAdminSession } from '../lib/adminAuth';
 import { Avatar, LoadingBlock } from './admin/kit';
+import { APP_NAME } from '../brand';
 
 const Overview = lazy(() => import('./admin/Overview'));
 const Users = lazy(() => import('./admin/Users'));
@@ -57,7 +58,7 @@ function AdminLogin() {
             <ShieldCheck size={22} />
           </span>
           <div>
-            <div className="eyebrow">Gymbulag</div>
+            <div className="eyebrow">{APP_NAME}</div>
             <h1 className="font-display text-2xl font-bold leading-tight tracking-wide">Admin sign in</h1>
           </div>
         </div>
@@ -114,7 +115,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       <div className="mb-7 flex items-center gap-2.5 px-2">
         <img src="/icon.svg" alt="" className="h-8 w-8" />
         <div className="leading-tight">
-          <div className="font-display text-lg font-bold tracking-wide">Gymbulag</div>
+          <div className="font-display text-lg font-bold tracking-wide">{APP_NAME}</div>
           <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-volt-500">Admin</div>
         </div>
       </div>
@@ -161,9 +162,9 @@ export default function AdminPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMenuOpen(false), [pathname]);
   useEffect(() => {
-    document.title = 'Gymbulag Admin';
+    document.title = `${APP_NAME} Admin`;
     return () => {
-      document.title = 'Gymbulag';
+      document.title = APP_NAME;
     };
   }, []);
 

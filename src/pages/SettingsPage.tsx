@@ -19,6 +19,7 @@ import { AvatarPicker } from '../components/AvatarPicker';
 import { BIO_MAX, EXPERIENCE_OPTIONS, GENDER_OPTIONS, GOAL_OPTIONS, labelOf, type Experience, type FitnessGoal, type Gender } from '../lib/profile';
 import { TdeeCalculator } from '../components/TdeeCalculator';
 import { fmtKcal } from '../lib/food';
+import { APP_FILE_SLUG, APP_NAME } from '../brand';
 
 function Row({ title, desc, children, stack }: { title: string; desc?: ReactNode; children: ReactNode; stack?: boolean }) {
   return (
@@ -275,7 +276,7 @@ function ProfileForm({ onDone }: { onDone: () => void }) {
         <input className="input" value={u.email} readOnly disabled />
         <span className="mt-1 block text-[11px] text-zinc-500 dark:text-zinc-400">Your email is your login and can't be changed here.</span>
       </label>
-      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Gyms you join see your name, email and picture. Your phone and other details are only visible to Gymbulag admins.</p>
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Gyms you join see your name, email and picture. Your phone and other details are only visible to {APP_NAME} admins.</p>
       {error && <p className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       <button className="btn-primary w-full" disabled={busy}>
         {busy && <Loader2 size={16} className="animate-spin" />} Save
@@ -350,13 +351,13 @@ export default function SettingsPage() {
 
   const exportJSON = async () => {
     const data = await exportAll();
-    downloadFile(`gymbulag-backup-${todayKey()}.json`, JSON.stringify(buildBackup(data), null, 2), 'application/json');
+    downloadFile(`${APP_FILE_SLUG}-backup-${todayKey()}.json`, JSON.stringify(buildBackup(data), null, 2), 'application/json');
     toast('Backup downloaded', { tone: 'success' });
   };
 
   const exportCSV = async () => {
     const data = await exportAll();
-    downloadFile(`gymbulag-sets-${todayKey()}.csv`, toCSV(data.sessions, data.exercises, settings.unit), 'text/csv');
+    downloadFile(`${APP_FILE_SLUG}-sets-${todayKey()}.csv`, toCSV(data.sessions, data.exercises, settings.unit), 'text/csv');
   };
 
   const onFile = async (f: File | undefined) => {
@@ -509,7 +510,7 @@ export default function SettingsPage() {
           </Group>
         )}
 
-        <p className="pb-4 text-center text-xs text-zinc-400">Gymbulag v{__APP_VERSION__} · Works offline</p>
+        <p className="pb-4 text-center text-xs text-zinc-400">{APP_NAME} v{__APP_VERSION__} · Works offline</p>
       </div>
 
       {__SHOW_USER_DATA__ && (

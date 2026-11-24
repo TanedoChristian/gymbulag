@@ -198,7 +198,7 @@ export async function fetchNearbyGyms(
     return await fetchNearbyGymsDirect(lat, lon, radiusM, signal);
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') throw e;
-    // Last resort: Gymbulag proxy (may be down — ignore quickly).
+    // Last resort: our server's proxy (may be down — ignore quickly).
     try {
       return await api<NearbyGymsResult>(`/gyms/nearby?lat=${lat}&lon=${lon}&radius=${radiusM}`);
     } catch (apiErr) {

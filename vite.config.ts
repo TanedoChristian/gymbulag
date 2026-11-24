@@ -3,16 +3,17 @@ import { defineConfig, loadEnv, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import pkg from './package.json' with { type: 'json' };
+import brand from './brand.json' with { type: 'json' };
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 /**
- * `npm run dev` also runs the Gymbulag API (login, sync, food search) inside the dev server,
+ * `npm run dev` also runs the app's API (login, sync, food search) inside the dev server,
  * so a single command, and a single tunnelled port, is all you need.
  */
-function gymbulagApi(): Plugin {
+function appApi(): Plugin {
   return {
-    name: 'gymbulag-api',
+    name: 'app-api',
     apply: 'serve',
     async configureServer(server) {
       // The server picks its database from process.env: MySQL with DB_DRIVER=mysql (npm run dev:local), else Postgres via DATABASE_URL.
@@ -47,6 +48,15 @@ function gymbulagApi(): Plugin {
   };
 }
 
+/** Fills %APP_NAME% / %APP_DESCRIPTION% in index.html from brand.json. */
+function brandHtml(): Plugin {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+  return {
+    name: 'brand-html',
+    transformIndexHtml: (html) => html.replaceAll('%APP_NAME%', esc(brand.name)).replaceAll('%APP_DESCRIPTION%', esc(brand.description)),
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const apiPort = env.PORT || '8787';
@@ -59,15 +69,16 @@ export default defineConfig(({ mode }) => {
       __CONTACT_EMAIL__: JSON.stringify((env.CONTACT_EMAIL ?? '').trim()),
     },
     plugins: [
-      gymbulagApi(),
+      appApi(),
+      brandHtml(),
       react(),
       VitePWA({
         registerType: 'prompt',
         includeAssets: ['icon.svg', 'apple-touch-icon.png'],
         manifest: {
-          name: 'Gymbulag — Workout Log',
-          short_name: 'Gymbulag',
-          description: 'Log your gym sessions, track PRs and see your progress. Works offline.',
+          name: `${brand.name} — ${brand.tagline}`,
+          short_name: brand.name,
+          description: brand.description,
           theme_color: '#0a0c0e',
           background_color: '#0a0c0e',
           display: 'standalone',

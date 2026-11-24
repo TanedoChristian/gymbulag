@@ -2,7 +2,7 @@
 // Passwords are hashed with scrypt; tokens are random and only their SHA-256 is stored.
 import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import { config } from './config.mjs';
+import { brand, config } from './config.mjs';
 import { TABLES } from './sync.mjs';
 import { dialect, isDuplicate, lockUsers, transaction } from './db.mjs';
 import { checkProfile, profileOut, PROFILE_COLUMNS, saveAvatar, saveProfile } from './profile.mjs';
@@ -54,7 +54,7 @@ export function checkBirthDate(v) {
   const d = m && new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   if (!m || !d || d.getUTCFullYear() !== +m[1] || d.getUTCMonth() !== +m[2] - 1 || d.getUTCDate() !== +m[3]) throw new AuthError(400, 'Enter your date of birth');
   const age = ageOn(s);
-  if (age < 13) throw new AuthError(400, 'You must be at least 13 to use Gymbulag');
+  if (age < 13) throw new AuthError(400, `You must be at least 13 to use ${brand.name}`);
   if (age > 120) throw new AuthError(400, 'Check your date of birth');
   return s;
 }
