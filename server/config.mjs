@@ -2,7 +2,17 @@
 import { createRequire } from 'node:module';
 
 /** The app's name (brand.json at the project root; edit that file to rename the app). */
-export const brand = createRequire(import.meta.url)('../brand.json');
+export const brand = loadBrand();
+
+function loadBrand() {
+  try {
+    return createRequire(import.meta.url)('../brand.json');
+  } catch (e) {
+    // Never take the API down over the app's name.
+    console.error('[config] could not read brand.json:', e.message);
+    return { name: 'Spotter', tagline: 'Workout Log', description: '', fileSlug: 'spotter' };
+  }
+}
 const env = process.env;
 
 const databaseUrl = (env.DATABASE_URL ?? '').trim();
